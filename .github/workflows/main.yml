@@ -30,11 +30,12 @@ jobs:
         env:
           VARS_JSON: ${{ secrets.VARS_JSON }}
         run: |
-          echo "$VARS_JSON" | jq -r 'to_entries[] | "\(.key)=\(.value)"' \
-            | while IFS= read -r line; do
-                echo "$line" >> $GITHUB_OUTPUT
-                echo "Output ${line%%=*}"
-              done
+          jq -r 'keys[]' <<< "$VARS_JSON" | while read -r key; do
+            value=$(jq -r --arg k "$key" '.[$k]' <<< "$VARS_JSON")
+            delim="EOF_$(openssl rand -hex 4)"
+            { echo "$key<<$delim"; echo "$value"; echo "$delim"; } >> "$GITHUB_OUTPUT"
+            echo "Output $key"
+          done
       - name: Create vars.json from secret
         run: |
           echo '${{ secrets.VARS_JSON }}' > vars.json
