@@ -156,6 +156,31 @@ resource "google_compute_firewall" "allow_temp_ssh" {
 
 # Playbook
 
+resource "null_resource" "null_ansible_install" {
+  depends_on = [
+    local_file.file_pem_ssh,
+    google_compute_instance.instance_main,
+    google_compute_firewall.fw_tempssh,
+  ]
+  triggers = {
+    instance_id   = google_compute_instance.instance_main
+    playbook_hash = filesha256("${path.module}/src/ansible/install_original.yml")
+  }
+  provisioner "local-exec" {
+    environment = {
+      PROJECT_ID    = var.gcloud_project_id
+      INSTANCE_IP    = google_compute_instance.instance_main.network_interface[0].access_config[0].nat_ip
+      INSTANCE_USER  = "ubuntu"
+      INSTANCE_SSH_KEY = local_file.file_pem_ssh.filename
+      FW_TEMPSSH_NAME  = google_compute_firewall.fw_tempssh.name
+      SSM_PARAM_NAME = google_secret_manager_secret_version.ansible_install_version.name
+      VARS_FILE      = "${path.module}/vars.json"
+      PLAYBOOK_PATH = "${path.module}/src/ansible/install.yml"
+    }
+    command = "chmod +x ${path.module}/src/null_resource/ansible.sh && ${path.module}/src/null_resource/ansible.sh"
+  }
+}
+
 resource "null_resource" "run_ansible" {
   depends_on = [
     google_compute_instance.instance_main,
