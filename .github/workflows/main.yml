@@ -157,6 +157,14 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+      - name: Setup Terraform CLI
+        uses: hashicorp/setup-terraform@v3
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.SERVICE_ACCOUNT }}
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
       - name: Download backend.tf
         uses: actions/download-artifact@v4
         with:
@@ -167,14 +175,6 @@ jobs:
         with:
           name: tfvars
           path: .
-      - name: Setup Terraform CLI
-        uses: hashicorp/setup-terraform@v3
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.SERVICE_ACCOUNT }}
-      - name: Setup gcloud CLI
-        uses: google-github-actions/setup-gcloud@v2
       - name: Terraform init
         run: terraform init -input=false
       - name: Terraform plan
@@ -216,6 +216,16 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+      - name: Setup Terraform CLI
+        uses: hashicorp/setup-terraform@v3
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.SERVICE_ACCOUNT }}
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+      - name: Install Ansible
+        run: sudo apt-get install -y ansible
       - name: Download tfplan artifacts
         uses: actions/download-artifact@v4
         with:
@@ -236,16 +246,6 @@ jobs:
         with:
           name: null-resources
           path: ./src/null_resources
-      - name: Setup Terraform CLI
-        uses: hashicorp/setup-terraform@v3
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.SERVICE_ACCOUNT }}
-      - name: Setup gcloud CLI
-        uses: google-github-actions/setup-gcloud@v2
-      - name: Install Ansible
-        run: sudo apt-get install -y ansible
       - name: Terraform init
         run: terraform init -input=false
       - name: Terraform apply
