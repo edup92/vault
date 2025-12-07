@@ -234,7 +234,7 @@ jobs:
       - name: Download null_resources artifact
         uses: actions/download-artifact@v4
         with:
-          name: null-resource
+          name: null-resources
           path: ./src/null_resources
       - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v3
