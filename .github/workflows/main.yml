@@ -1,22 +1,18 @@
 name: main
-
 on:
   workflow_dispatch:
-  
 permissions:
   contents: read
   issues: write
 
 jobs:
-  main:
+
+  prepare-vars:
     runs-on: ubuntu-latest
+    outputs: ${{ steps.export_vars.outputs }}
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Setup Terraform CLI
-        uses: hashicorp/setup-terraform@v3
-      - name: Setup Ansible
-        run: sudo apt-get install -y ansible
       - name: Check VARS secret exists
         env:
           VARS_JSON: ${{ secrets.VARS_JSON }}
@@ -36,69 +32,121 @@ jobs:
             { echo "$key<<$delim"; echo "$value"; echo "$delim"; } >> "$GITHUB_OUTPUT"
             echo "Output $key"
           done
-      - name: Create vars.json from secret
-        run: |
-          echo '${{ secrets.VARS_JSON }}' > vars.json
+
+  prepare-backend:
+    runs-on: ubuntu-latest
+    needs: prepare-vars
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.SERVICE_ACCOUNT }} 
-      - name: Setup gcloud
+          credentials_json: ${{ secrets.SERVICE_ACCOUNT }}
+      - name: Setup gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: ${{steps.export_vars.outputs.gcloud_project_id}}
-      - name: Creates / Checks state bucket (GCS)
+          project_id: ${{ needs.prepare-vars.outputs.gcloud_project_id }}
+      - name: Create or check state bucket
         env:
-          BUCKET_NAME: ${{ steps.export_vars.outputs.project_name }}-bucket-tfstate
-          GCP_PROJECT: ${{ steps.export_vars.outputs.gcloud_project_id }}
-          GCP_REGION: ${{ steps.export_vars.outputs.gcloud_region }}
+          BUCKET_NAME: ${{ needs.prepare-vars.outputs.project_name }}-bucket-tfstate
+          GCP_PROJECT: ${{ needs.prepare-vars.outputs.gcloud_project_id }}
+          GCP_REGION: ${{ needs.prepare-vars.outputs.gcloud_region }}
         run: |
-          # 1. Check if bucket exists
           if gsutil ls -p "$GCP_PROJECT" "gs://$BUCKET_NAME" >/dev/null 2>&1; then
-            echo "Bucket already exists: $BUCKET_NAME"
+            echo "Bucket already exists: $BUCKET_NAME, skipping"
           else
-            echo "Bucket does not exist. Creating: $BUCKET_NAME"
-
-            # 2. Create bucket with region
-            echo "Creating bucket in region: $GCP_REGION"
             gsutil mb -p "$GCP_PROJECT" -l "$GCP_REGION" "gs://$BUCKET_NAME"
-
-            # 3. Block all public access (recommended)
-            echo "Enabling uniform bucket-level access"
             gcloud storage buckets update gs://$BUCKET_NAME --uniform-bucket-level-access
-
-            # 4. Enable versioning
-            echo "Enabling versioning"
             gsutil versioning set on "gs://$BUCKET_NAME"
+            echo "Bucket created successfully with versioning enabled: $BUCKET_NAME"
           fi
-      - name: Create TF Backend (jq -> backend.tf.json)
+      - name: Create TF Backend
         env:
-          BUCKET_NAME: ${{steps.export_vars.outputs.project_name}}-bucket-tfstate
-          AWS_REGION: ${{steps.export_vars.outputs.aws_region}}
+          BUCKET_NAME: ${{ needs.prepare-vars.outputs.project_name }}-bucket-tfstate
         run: |
           tee backend.tf > /dev/null <<EOF
           terraform {
             backend "gcs" {
               bucket = "$BUCKET_NAME"
-              prefix    = ""
+              prefix = ""
             }
           }
           EOF
-          echo "backend.tf created"
+      - name: Upload backend.tf artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend
+          path: backend.tf
+
+  terraform-plan:
+    runs-on: ubuntu-latest
+    needs: [prepare-vars, prepare-backend]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Download backend.tf artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend
+          path: .
+      - name: Setup Terraform CLI
+        uses: hashicorp/setup-terraform@v3
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.SERVICE_ACCOUNT }}
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        # NO project_id here (removed)
+      - name: Build dynamic -var arguments
+        id: build_vars
+        run: |
+          VAR_ARGS=""
+          for key in $(echo "${{ toJson(needs.prepare-vars.outputs) }}" | jq -r 'keys[]'); do
+            value=$(echo "${{ toJson(needs.prepare-vars.outputs) }}" | jq -r --arg k "$key" '.[$k]')
+            VAR_ARGS="$VAR_ARGS -var=\"$key=$value\""
+          done
+          echo "vars=$VAR_ARGS" >> "$GITHUB_OUTPUT"
       - name: Terraform init
         run: terraform init -input=false
-      - name: Terraform plan (using vars.json)
-        run: terraform plan -input=false -no-color -var-file=vars.json -out=tfplan
-      - name: Terraform show
-        run: terraform show -no-color tfplan > plan.txt
-      - name: Await Manual Approval
+      - name: Terraform plan
+        run: terraform plan -input=false -no-color ${{ steps.build_vars.outputs.vars }} -out=tfplan
+      - name: Generate visual plan (tfplan_visual)
+        run: terraform show -no-color tfplan > tfplan_visual
+      - name: Upload tfplan artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-artifacts
+          path: |
+            tfplan
+            tfplan_visual
+
+  terraform-apply:
+    runs-on: ubuntu-latest
+    needs: terraform-plan
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Download tfplan artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-artifacts
+          path: .
+      - name: Setup Terraform CLI
+        uses: hashicorp/setup-terraform@v3
+      - name: Install Ansible
+        run: sudo apt-get install -y ansible
+      - name: Await Manual Approval (5 min timeout)
         id: approval
         uses: trstringer/manual-approval@v1
         with:
           secret: ${{ secrets.GITHUB_TOKEN }}
           minimum-approvals: 1
           approvers: ${{ github.actor }}
+          timeout-minutes: 5
           issue-title: "Manual Approval Required for Terraform Apply"
-          issue-body-file-path: plan.txt
+          issue-body-file-path: tfplan_visual
       - name: Terraform apply
         run: terraform apply -auto-approve tfplan
