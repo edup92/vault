@@ -173,7 +173,7 @@ resource "null_resource" "null_ansible_install" {
       INSTANCE_USER  = local.ansible_user
       INSTANCE_SSH_KEY = local_file.file_pem_ssh.filename
       FW_TEMPSSH_NAME  = google_compute_firewall.fw_tempssh.name
-      VARS_JSON = local.ansible_vars
+      VARS_JSON = nonsensitive(local.ansible_vars)
       PLAYBOOK_PATH = local.ansible_path
     }
     command = "chmod +x ./src/null_resource/ansible.sh && ./src/null_resource/ansible.sh"
