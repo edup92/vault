@@ -1,6 +1,6 @@
 # Vault
 
-## Bitwarden selfhosted in docker containers, with Google SSO Auth, Hosted in Google cloud, DNS and WAF in Cloudflare
+## Vaultwarden selfhosted in docker containers, with Google SSO Auth, Hosted in Google cloud, DNS and WAF in Cloudflare
 
 ## Installation
 - Create zone in cloudflare and set DNS Servers
