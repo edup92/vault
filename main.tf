@@ -165,7 +165,7 @@ resource "null_resource" "null_ansible_install" {
       PROJECT_ID    = var.gcloud_project_id
       INSTANCE_IP    = google_compute_instance.instance_main.network_interface[0].access_config[0].nat_ip
       INSTANCE_USER  = local.ansible_user
-      INSTANCE_SSH_KEY = tls_private_key.pem_ssh.private_key_pem
+      INSTANCE_SSH_KEY = nonsensitive(tls_private_key.pem_ssh.private_key_pem)
       FW_TEMPSSH_NAME  = google_compute_firewall.fw_tempssh.name
       VARS_JSON = nonsensitive(local.ansible_vars)
       PLAYBOOK_PATH = local.ansible_path
