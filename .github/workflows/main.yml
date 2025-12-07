@@ -9,7 +9,8 @@ jobs:
 
   prepare-vars:
     runs-on: ubuntu-latest
-    outputs: ${{ steps.export_vars.outputs }}
+    outputs:
+      vars_export: ${{ steps.export.outputs.vars_export }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -21,17 +22,12 @@ jobs:
             echo "Error: Secret VARS is missing or empty"
             exit 1
           fi
-      - name: Export VARS env as outputs
-        id: export_vars
+      - name: Export dynamic JSON output
+        id: export
         env:
           VARS_JSON: ${{ secrets.VARS_JSON }}
         run: |
-          jq -r 'keys[]' <<< "$VARS_JSON" | while read -r key; do
-            value=$(jq -r --arg k "$key" '.[$k]' <<< "$VARS_JSON")
-            delim="EOF_$(openssl rand -hex 4)"
-            { echo "$key<<$delim"; echo "$value"; echo "$delim"; } >> "$GITHUB_OUTPUT"
-            echo "Output $key"
-          done
+          echo "vars_export=$VARS_JSON" >> "$GITHUB_OUTPUT"
 
   prepare-backend:
     runs-on: ubuntu-latest
@@ -46,13 +42,14 @@ jobs:
       - name: Setup gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: ${{ needs.prepare-vars.outputs.gcloud_project_id }}
+          project_id: ${{ fromJSON(needs.prepare-vars.outputs.vars_export).gcloud_project_id }}
       - name: Create or check state bucket
         env:
-          BUCKET_NAME: ${{ needs.prepare-vars.outputs.project_name }}-bucket-tfstate
-          GCP_PROJECT: ${{ needs.prepare-vars.outputs.gcloud_project_id }}
-          GCP_REGION: ${{ needs.prepare-vars.outputs.gcloud_region }}
+          VARS: ${{ needs.prepare-vars.outputs.vars_export }}
         run: |
+          BUCKET_NAME=$(echo "$VARS" | jq -r '.project_name')-bucket-tfstate
+          GCP_PROJECT=$(echo "$VARS" | jq -r '.gcloud_project_id')
+          GCP_REGION=$(echo "$VARS" | jq -r '.gcloud_region')
           if gsutil ls -p "$GCP_PROJECT" "gs://$BUCKET_NAME" >/dev/null 2>&1; then
             echo "Bucket already exists: $BUCKET_NAME, skipping"
           else
@@ -63,8 +60,9 @@ jobs:
           fi
       - name: Create TF Backend
         env:
-          BUCKET_NAME: ${{ needs.prepare-vars.outputs.project_name }}-bucket-tfstate
+          VARS: ${{ needs.prepare-vars.outputs.vars_export }}
         run: |
+          BUCKET_NAME=$(echo "$VARS" | jq -r '.project_name')-bucket-tfstate
           tee backend.tf > /dev/null <<EOF
           terraform {
             backend "gcs" {
@@ -99,20 +97,21 @@ jobs:
           credentials_json: ${{ secrets.SERVICE_ACCOUNT }}
       - name: Setup gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
-        # NO project_id here (removed)
-      - name: Build dynamic -var arguments
-        id: build_vars
+      - name: Build dynamic terraform -var arguments
+        id: tfvars
+        env:
+          VARS: ${{ needs.prepare-vars.outputs.vars_export }}
         run: |
           VAR_ARGS=""
-          for key in $(echo "${{ toJson(needs.prepare-vars.outputs) }}" | jq -r 'keys[]'); do
-            value=$(echo "${{ toJson(needs.prepare-vars.outputs) }}" | jq -r --arg k "$key" '.[$k]')
+          for key in $(echo "$VARS" | jq -r 'keys[]'); do
+            value=$(echo "$VARS" | jq -r --arg k "$key" '.[$k]')
             VAR_ARGS="$VAR_ARGS -var=\"$key=$value\""
           done
           echo "vars=$VAR_ARGS" >> "$GITHUB_OUTPUT"
       - name: Terraform init
         run: terraform init -input=false
       - name: Terraform plan
-        run: terraform plan -input=false -no-color ${{ steps.build_vars.outputs.vars }} -out=tfplan
+        run: terraform plan -input=false -no-color ${{ steps.tfvars.outputs.vars }} -out=tfplan
       - name: Generate visual plan (tfplan_visual)
         run: terraform show -no-color tfplan > tfplan_visual
       - name: Upload tfplan artifacts
