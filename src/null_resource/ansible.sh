@@ -59,6 +59,7 @@ ansible-playbook \
   --private-key "$INSTANCE_SSH_KEY" \
   --extra-vars "@$VARS_FILE" \
   --ssh-extra-args="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+  --extra-vars "ansible_python_interpreter=/usr/bin/python3" \
   "$PLAYBOOK_PATH"
 
 # Marking as installed
