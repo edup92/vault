@@ -204,16 +204,21 @@ jobs:
           path: .
       - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v3
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.SERVICE_ACCOUNT }}
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
       - name: Install Ansible
         run: sudo apt-get install -y ansible
       - name: Await Manual Approval
-        id: approval
+        timeout-minutes: 5
         uses: trstringer/manual-approval@v1
         with:
           secret: ${{ secrets.GITHUB_TOKEN }}
           minimum-approvals: 1
           approvers: ${{ github.actor }}
-          timeout-minutes: 5
           issue-title: "Manual Approval Required for Terraform Apply"
           issue-body-file-path: tfplan_visual
       - name: Terraform apply
