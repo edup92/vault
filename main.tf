@@ -139,7 +139,7 @@ resource "google_compute_firewall" "fw_cf" {
   target_tags   = [google_compute_instance.instance_main.name]
 }
 
-resource "google_compute_firewall" "allow_temp_ssh" {
+resource "google_compute_firewall" "fw_tempssh" {
   name    = local.firewall_tempssh_name
   project = var.gcloud_project_id
   network = "default"
