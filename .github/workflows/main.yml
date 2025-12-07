@@ -27,7 +27,12 @@ jobs:
         env:
           VARS_JSON: ${{ secrets.VARS_JSON }}
         run: |
-          echo "vars_export=$VARS_JSON" >> "$GITHUB_OUTPUT"
+          delimiter="EOF_$(openssl rand -hex 8)"
+          {
+            echo "vars_export<<$delimiter"
+            echo "$VARS_JSON"
+            echo "$delimiter"
+          } >> "$GITHUB_OUTPUT"
 
   prepare-backend:
     runs-on: ubuntu-latest
