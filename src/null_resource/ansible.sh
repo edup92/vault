@@ -54,6 +54,17 @@ else
     echo "Playbook is NOT installed. Continuing with execution..."
 fi
 
+# Validate VARS_JSON syntax
+
+echo "Validating JSON syntax..."
+
+if echo "$VARS_JSON" | jq -e . >/dev/null 2>&1; then
+  echo "JSON valid."
+else
+  echo "ERROR: Invalid JSON received in VARS_JSON."
+  exit 1
+fi
+
 # Ejecutar Ansible
 
 ansible-playbook \
