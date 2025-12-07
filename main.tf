@@ -152,7 +152,7 @@ resource "google_compute_firewall" "fw_tempssh" {
 
 resource "null_resource" "null_ansible_install" {
   depends_on = [
-    ls_private_key.pem_ssh,
+    tls_private_key.pem_ssh,
     google_compute_instance.instance_main,
     google_compute_firewall.fw_tempssh,
   ]
