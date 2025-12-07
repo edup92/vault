@@ -135,18 +135,18 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Set execute permissions for null_resource scripts
+      - name: Set execute permissions for null_resources scripts
         run: |
-          if [ -d "./src/null_resource" ]; then
-            chmod +x ./src/null_resource/*.sh || true
+          if [ -d "./src/null_resources" ]; then
+            chmod +x ./src/null_resources/*.sh || true
           else
-            echo "Directory ./src/null_resource does not exist. Skipping."
+            echo "Directory ./src/null_resources does not exist. Skipping."
           fi
-      - name: Upload null_resource folder
+      - name: Upload null_resources folder
         uses: actions/upload-artifact@v4
         with:
           name: null-resources
-          path: ./src/null_resource
+          path: ./src/null_resources
 
   tf-plan:
     runs-on: ubuntu-latest
@@ -231,11 +231,11 @@ jobs:
         with:
           name: tfvars
           path: .
-      - name: Download null_resource artifact
+      - name: Download null_resources artifact
         uses: actions/download-artifact@v4
         with:
           name: null-resource
-          path: ./src/null_resource
+          path: ./src/null_resources
       - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v3
       - name: Authenticate to GCP
