@@ -47,7 +47,7 @@ jobs:
       - name: Setup gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: ${{ fromJSON(needs.prepare-vars.outputs.vars_export).gcloud_project_id }}
+          project_id: "${{ fromJSON(needs.prepare-vars.outputs.vars_export).gcloud_project_id }}"
       - name: Create or check state bucket
         env:
           VARS: ${{ needs.prepare-vars.outputs.vars_export }}
