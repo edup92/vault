@@ -219,5 +219,7 @@ jobs:
           approvers: ${{ github.actor }}
           issue-title: "Manual Approval Required for Terraform Apply"
           issue-body-file-path: tfplan_visual
+      - name: Terraform init
+        run: terraform init -input=false
       - name: Terraform apply
         run: terraform apply -auto-approve tfplan
