@@ -133,6 +133,8 @@ jobs:
   prepare-null-resources:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
       - name: Set execute permissions for null_resource scripts
         run: |
           if [ -d "./src/null_resource" ]; then
