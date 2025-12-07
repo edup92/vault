@@ -46,26 +46,27 @@ if ssh -o BatchMode=yes \
       -o UserKnownHostsFile=/dev/null \
       -i "$INSTANCE_SSH_KEY" \
       $INSTANCE_USER@"$INSTANCE_IP" \
-      "test -f /.installed"; then
-
-    echo "Playbook already installed. Exiting."
+      "test -f /var/local/.installed"; then
+    echo "Playbook was already installed. Exiting."
+    echo "If you want the playbook to run again, connect to the server and delete the /var/local/.installed file."
     exit 0
+else
+    echo "Playbook is NOT installed. Continuing with execution..."
 fi
 
 # Ejecutar Ansible
 
 ansible-playbook \
-  -i ${INSTANCE_IP},ansible_python_interpreter=/usr/bin/python3 \
+  -i ${INSTANCE_IP}, -e ansible_python_interpreter=/usr/bin/python3 \
   --user "$INSTANCE_USER" \
   --private-key "$INSTANCE_SSH_KEY" \
   --extra-vars "@$VARS_FILE" \
   --ssh-extra-args="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
   "$PLAYBOOK_PATH"
 
-
 # Marking as installed
 
-echo "Settign as installed"
+echo "Ansible finished correctly"
 
 ssh -o BatchMode=yes \
     -o ConnectTimeout=3 \
@@ -73,7 +74,9 @@ ssh -o BatchMode=yes \
     -o UserKnownHostsFile=/dev/null \
     -i "$INSTANCE_SSH_KEY" \
     $INSTANCE_USER@"$INSTANCE_IP" \
-    "sudo touch /.installed"
+    "sudo touch /var/local/.installed"
+
+echo "Marked as installed"
 
 # Restaurar SG principal
 echo "Restoring main firewall: $FW_TEMPSSH_NAME"
