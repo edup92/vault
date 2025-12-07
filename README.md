@@ -25,7 +25,7 @@
   "dns_record": "x.mydomain.tld",
   "admin_email": "",
   "admin_pass": "",
-  "allowed_countries": ["ES"],
+  "allowed_countries": [],
   "smtp_host": "",
   "smtp_port": 587,
   "smtp_security": "starttls",

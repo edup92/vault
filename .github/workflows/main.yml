@@ -7,8 +7,52 @@ permissions:
 
 jobs:
 
+  validate-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required secrets exist
+        env:
+          VARS_JSON: ${{ secrets.VARS_JSON }}
+          SERVICE_ACCOUNT: ${{ secrets.SERVICE_ACCOUNT }}
+        run: |
+          for s in VARS_JSON SERVICE_ACCOUNT; do
+            if [ -z "${!s}" ]; then
+              echo "Error: Missing required secret: $s"
+              exit 1
+            fi
+          done
+          echo "All required secrets exist"
+      - name: Validate VARS_JSON schema
+        env:
+          VARS: ${{ secrets.VARS_JSON }}
+        run: |
+          echo "$VARS" | jq -e '
+            (.gcloud_project_id   | type=="string") and
+            (.gcloud_region       | type=="string") and
+            (.cf_token            | type=="string") and
+            (.cf_accountid        | type=="string") and
+            (.project_name        | type=="string") and
+            (.dns_domain          | type=="string") and
+            (.dns_record          | type=="string") and
+            (.admin_email         | type=="string") and
+            (.admin_pass          | type=="string") and
+            (.smtp_host           | type=="string") and
+            (.smtp_security       | type=="string") and
+            (.smtp_username       | type=="string") and
+            (.smtp_password       | type=="string") and
+            (.oauth_client_id     | type=="string") and
+            (.oauth_client_secret | type=="string") and
+            (.smtp_port           | type=="number") and
+            (.allowed_countries   | type=="array")
+          ' >/dev/null || {
+            echo "Error: VARS_JSON schema invalid"
+            exit 1
+          }
+          echo "VARS_JSON schema is valid"
+
   prepare-backend:
     runs-on: ubuntu-latest
+    needs: validate-secrets
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4

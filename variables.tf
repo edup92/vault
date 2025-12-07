@@ -75,8 +75,11 @@ variable "smtp_port" {
 }
 
 variable "smtp_security" {
-  description = "SMTP server security type"
-  type        = string
+  type = string
+  validation {
+    condition     = var.smtp_security == "starttls" || var.smtp_security == "ssl"
+    error_message = "smtp_security must be starttls or ssl."
+  }
 }
 
 variable "smtp_username" {
