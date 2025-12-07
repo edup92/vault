@@ -22,17 +22,13 @@ jobs:
             echo "Error: Secret VARS is missing or empty"
             exit 1
           fi
-      - name: Export dynamic JSON output
+      - name: Export dynamic JSON as base64
         id: export
         env:
           VARS_JSON: ${{ secrets.VARS_JSON }}
         run: |
-          delimiter="EOF_$(openssl rand -hex 8)"
-          {
-            echo "vars_export<<$delimiter"
-            echo "$VARS_JSON"
-            echo "$delimiter"
-          } >> "$GITHUB_OUTPUT"
+          ENCODED=$(echo "$VARS_JSON" | base64 -w 0)
+          echo "vars_export=$ENCODED" >> "$GITHUB_OUTPUT"
 
   prepare-backend:
     runs-on: ubuntu-latest
@@ -47,11 +43,13 @@ jobs:
       - name: Setup gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: "${{ fromJSON(needs.prepare-vars.outputs.vars_export).gcloud_project_id }}"
+          # project_id is NOT secret → safe for fromJSON()
+          project_id: "${{ fromJSON(fromJSON(needs.prepare-vars.outputs.vars_export | fromBase64)).gcloud_project_id }}"
       - name: Create or check state bucket
         env:
-          VARS: ${{ needs.prepare-vars.outputs.vars_export }}
+          VARS_B64: ${{ needs.prepare-vars.outputs.vars_export }}
         run: |
+          VARS=$(echo "$VARS_B64" | base64 -d)
           BUCKET_NAME=$(echo "$VARS" | jq -r '.project_name')-bucket-tfstate
           GCP_PROJECT=$(echo "$VARS" | jq -r '.gcloud_project_id')
           GCP_REGION=$(echo "$VARS" | jq -r '.gcloud_region')
@@ -65,8 +63,9 @@ jobs:
           fi
       - name: Create TF Backend
         env:
-          VARS: ${{ needs.prepare-vars.outputs.vars_export }}
+          VARS_B64: ${{ needs.prepare-vars.outputs.vars_export }}
         run: |
+          VARS=$(echo "$VARS_B64" | base64 -d)
           BUCKET_NAME=$(echo "$VARS" | jq -r '.project_name')-bucket-tfstate
           tee backend.tf > /dev/null <<EOF
           terraform {
@@ -105,8 +104,9 @@ jobs:
       - name: Build dynamic terraform -var arguments
         id: tfvars
         env:
-          VARS: ${{ needs.prepare-vars.outputs.vars_export }}
+          VARS_B64: ${{ needs.prepare-vars.outputs.vars_export }}
         run: |
+          VARS=$(echo "$VARS_B64" | base64 -d)
           VAR_ARGS=""
           for key in $(echo "$VARS" | jq -r 'keys[]'); do
             value=$(echo "$VARS" | jq -r --arg k "$key" '.[$k]')
