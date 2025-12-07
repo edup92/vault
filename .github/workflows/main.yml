@@ -49,6 +49,27 @@ jobs:
             exit 1
           }
           echo "VARS_JSON schema is valid"
+      - name: Validate SERVICE_ACCOUNT schema
+        env:
+          SA: ${{ secrets.SERVICE_ACCOUNT }}
+        run: |
+          echo "$SA" | jq -e '
+            (.type                          | type=="string") and
+            (.project_id                    | type=="string") and
+            (.private_key_id                | type=="string") and
+            (.private_key                   | type=="string") and
+            (.client_email                  | type=="string") and
+            (.client_id                     | type=="string") and
+            (.auth_uri                      | type=="string") and
+            (.token_uri                     | type=="string") and
+            (.auth_provider_x509_cert_url   | type=="string") and
+            (.client_x509_cert_url          | type=="string") and
+            (.universe_domain               | type=="string")
+          ' >/dev/null || {
+            echo "Error: SERVICE_ACCOUNT schema invalid"
+            exit 1
+          }
+          echo "SERVICE_ACCOUNT schema is valid"
 
   prepare-backend:
     runs-on: ubuntu-latest
@@ -57,7 +78,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
       - name: Authenticate to GCP
-        uses: google-github-actions/auth@v2
+        uses: google-ggithub-actions/auth@v2
         with:
           credentials_json: ${{ secrets.SERVICE_ACCOUNT }}
       - name: Setup gcloud CLI
