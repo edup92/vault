@@ -60,7 +60,7 @@ ansible-playbook \
   -i ${INSTANCE_IP}, -e ansible_python_interpreter=/usr/bin/python3 \
   --user "$INSTANCE_USER" \
   --private-key "$INSTANCE_SSH_KEY" \
-  --extra-vars "@$VARS_FILE" \
+  --extra-vars "$VARS_JSON" \ 
   --ssh-extra-args="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
   "$PLAYBOOK_PATH"
 
