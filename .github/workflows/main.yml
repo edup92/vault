@@ -115,6 +115,7 @@ jobs:
             }
           }
           EOF
+          echo "Backend file 'backend.tf' has been successfully generated."
       - name: Upload backend.tf artifact
         uses: actions/upload-artifact@v4
         with:
@@ -151,7 +152,12 @@ jobs:
             value=$(echo "$VARS" | jq -r --arg k "$key" '.[$k]')
             VAR_ARGS="$VAR_ARGS -var=\"$key=$value\""
           done
-          echo "vars=$VAR_ARGS" >> "$GITHUB_OUTPUT"
+          DELIM="EOF_$(openssl rand -hex 8)"
+          {
+            echo "vars<<$DELIM"
+            echo "$VAR_ARGS"
+            echo "$DELIM"
+          } >> "$GITHUB_OUTPUT"
       - name: Terraform init
         run: terraform init -input=false
       - name: Terraform plan
