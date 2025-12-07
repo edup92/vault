@@ -7,32 +7,8 @@ permissions:
 
 jobs:
 
-  prepare-vars:
-    runs-on: ubuntu-latest
-    outputs:
-      vars_export: ${{ steps.export.outputs.vars_export }}
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-      - name: Check VARS secret exists
-        env:
-          VARS_JSON: ${{ secrets.VARS_JSON }}
-        run: |
-          if [ -z "$VARS_JSON" ]; then
-            echo "Error: Secret VARS is missing or empty"
-            exit 1
-          fi
-      - name: Export dynamic JSON as base64
-        id: export
-        env:
-          VARS_JSON: ${{ secrets.VARS_JSON }}
-        run: |
-          ENCODED=$(echo "$VARS_JSON" | base64 -w 0)
-          echo "vars_export=$ENCODED" >> "$GITHUB_OUTPUT"
-
   prepare-backend:
     runs-on: ubuntu-latest
-    needs: prepare-vars
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -43,16 +19,15 @@ jobs:
       - name: Setup gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
         with:
-          # project_id is NOT secret → safe for fromJSON()
-          project_id: "${{ fromJSON(fromJSON(needs.prepare-vars.outputs.vars_export | fromBase64)).gcloud_project_id }}"
+          project_id: "${{ fromJSON(secrets.VARS_JSON).gcloud_project_id }}"
       - name: Create or check state bucket
         env:
-          VARS_B64: ${{ needs.prepare-vars.outputs.vars_export }}
+          VARS: ${{ secrets.VARS_JSON }}
         run: |
-          VARS=$(echo "$VARS_B64" | base64 -d)
-          BUCKET_NAME=$(echo "$VARS" | jq -r '.project_name')-bucket-tfstate
+          PROJECT_NAME=$(echo "$VARS" | jq -r '.project_name')
           GCP_PROJECT=$(echo "$VARS" | jq -r '.gcloud_project_id')
           GCP_REGION=$(echo "$VARS" | jq -r '.gcloud_region')
+          BUCKET_NAME="${PROJECT_NAME}-bucket-tfstate"
           if gsutil ls -p "$GCP_PROJECT" "gs://$BUCKET_NAME" >/dev/null 2>&1; then
             echo "Bucket already exists: $BUCKET_NAME, skipping"
           else
@@ -63,10 +38,10 @@ jobs:
           fi
       - name: Create TF Backend
         env:
-          VARS_B64: ${{ needs.prepare-vars.outputs.vars_export }}
+          VARS: ${{ secrets.VARS_JSON }}
         run: |
-          VARS=$(echo "$VARS_B64" | base64 -d)
-          BUCKET_NAME=$(echo "$VARS" | jq -r '.project_name')-bucket-tfstate
+          PROJECT_NAME=$(echo "$VARS" | jq -r '.project_name')
+          BUCKET_NAME="${PROJECT_NAME}-bucket-tfstate"
           tee backend.tf > /dev/null <<EOF
           terraform {
             backend "gcs" {
@@ -83,7 +58,7 @@ jobs:
 
   terraform-plan:
     runs-on: ubuntu-latest
-    needs: [prepare-vars, prepare-backend]
+    needs: prepare-backend
     timeout-minutes: 5
     steps:
       - name: Checkout repo
@@ -104,9 +79,8 @@ jobs:
       - name: Build dynamic terraform -var arguments
         id: tfvars
         env:
-          VARS_B64: ${{ needs.prepare-vars.outputs.vars_export }}
+          VARS: ${{ secrets.VARS_JSON }}
         run: |
-          VARS=$(echo "$VARS_B64" | base64 -d)
           VAR_ARGS=""
           for key in $(echo "$VARS" | jq -r 'keys[]'); do
             value=$(echo "$VARS" | jq -r --arg k "$key" '.[$k]')
