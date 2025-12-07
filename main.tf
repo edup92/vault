@@ -156,6 +156,11 @@ resource "google_compute_firewall" "allow_temp_ssh" {
 
 # Playbook
 
+
+locals {
+  ansible_path = "./src/ansible/install_new.yml"
+}
+
 resource "null_resource" "null_ansible_install" {
   depends_on = [
     local_file.file_pem_ssh,
@@ -164,7 +169,7 @@ resource "null_resource" "null_ansible_install" {
   ]
   triggers = {
     instance_id   = google_compute_instance.instance_main.id
-    playbook_hash = filesha256("${path.module}/src/ansible/install.yml")
+    playbook_hash = filesha256(local.ansible_path)
   }
   provisioner "local-exec" {
     environment = {
@@ -173,10 +178,10 @@ resource "null_resource" "null_ansible_install" {
       INSTANCE_USER  = "ubuntu"
       INSTANCE_SSH_KEY = local_file.file_pem_ssh.filename
       FW_TEMPSSH_NAME  = google_compute_firewall.fw_tempssh.name
-      VARS_FILE      = "${path.module}/vars.json"
-      PLAYBOOK_PATH = "${path.module}/src/ansible/install.yml"
+      VARS_FILE      = "./vars.json"
+      PLAYBOOK_PATH = local.ansible_path
     }
-    command = "chmod +x ${path.module}/src/null_resource/ansible.sh && ${path.module}/src/null_resource/ansible.sh"
+    command = "chmod +x ./src/null_resource/ansible.sh && ./src/null_resource/ansible.sh"
   }
 }
 
