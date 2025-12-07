@@ -20,4 +20,8 @@ locals {
 
   ouath_brand_name = "${var.project_name}-brand-main"
   ouath_client_name = "${var.project_name}-client-main"
+
+  # Ansible
+
+  ansible_path = "./src/ansible/install_new.yml"
 }

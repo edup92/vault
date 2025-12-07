@@ -156,11 +156,6 @@ resource "google_compute_firewall" "allow_temp_ssh" {
 
 # Playbook
 
-
-locals {
-  ansible_path = "./src/ansible/install_new.yml"
-}
-
 resource "null_resource" "null_ansible_install" {
   depends_on = [
     local_file.file_pem_ssh,
