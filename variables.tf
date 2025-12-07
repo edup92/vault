@@ -43,7 +43,7 @@ variable "allowed_countries" {
 }
 
 variable "admin_email" {
-  description = "Administrator email address for the Bitwarden instance"
+  description = "Administrator email address for the Vaultwarden instance"
   type        = string
 }
 
@@ -58,45 +58,33 @@ variable "oauth_client_secret" {
   sensitive   = true
 }
 
-variable "bw_installation_id" {
-  description = "Bitwarden installation ID in format XXXX-XXXX-XXXX"
+variable "admin_pass" {
+  description = "Password for vaultwarden ADMIN"
   type        = string
   sensitive   = true
 }
 
-variable "bw_installation_key" {
-  description = "Bitwarden installation key"
-  type        = string
-  sensitive   = true
-}
-
-variable "bw_db_password" {
-  description = "Password for Bitwarden database"
-  type        = string
-  sensitive   = true
-}
-
-variable "bw_smtp_host" {
+variable "smtp_host" {
   description = "SMTP server hostname for email delivery"
   type        = string
 }
 
-variable "bw_smtp_port" {
+variable "smtp_port" {
   description = "SMTP server port for email delivery"
   type        = number
 }
 
-variable "bw_smtp_ssl" {
-  description = "Enable SSL/TLS for SMTP connection"
-  type        = bool
+variable "smtp_security" {
+  description = "SMTP server security type"
+  type        = string
 }
 
-variable "bw_smtp_username" {
+variable "smtp_username" {
   description = "SMTP server username for authentication"
   type        = string
 }
 
-variable "bw_smtp_password" {
+variable "smtp_password" {
   description = "SMTP server password for authentication"
   type        = string
   sensitive   = true
