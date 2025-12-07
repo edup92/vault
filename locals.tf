@@ -23,6 +23,7 @@ locals {
 
   # Ansible
 
+  ansible_null_resource = "./src/null_resource/ansible.sh"
   ansible_path = "./src/ansible/install_new.yml"
   ansible_user = "ubuntu"
   ansible_vars = jsonencode({

@@ -130,6 +130,22 @@ jobs:
           name: tfvars
           path: terraform.auto.tfvars.json
 
+  prepare-null-resources:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set execute permissions for null_resource scripts
+        run: |
+          if [ -d "./src/null_resource" ]; then
+            chmod +x ./src/null_resource/*.sh || true
+          else
+            echo "Directory ./src/null_resource does not exist. Skipping."
+          fi
+      - name: Upload null_resource folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: null-resources
+          path: ./src/null_resource
+
   tf-plan:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -192,7 +208,9 @@ jobs:
 
   tf-apply:
     runs-on: ubuntu-latest
-    needs: approbal
+    needs:
+      - approbal
+      - prepare-null-resources
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -211,6 +229,11 @@ jobs:
         with:
           name: tfvars
           path: .
+      - name: Download null_resource artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: null-resource
+          path: ./src/null_resource
       - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v3
       - name: Authenticate to GCP
