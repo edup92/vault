@@ -48,28 +48,26 @@ jobs:
             echo "Error: VARS_JSON schema invalid"
             exit 1
           }
-          echo "VARS_JSON schema is valid"
       - name: Validate SERVICE_ACCOUNT schema
         env:
           SA: ${{ secrets.SERVICE_ACCOUNT }}
         run: |
           echo "$SA" | jq -e '
-            (.type                          | type=="string") and
-            (.project_id                    | type=="string") and
-            (.private_key_id                | type=="string") and
-            (.private_key                   | type=="string") and
-            (.client_email                  | type=="string") and
-            (.client_id                     | type=="string") and
-            (.auth_uri                      | type=="string") and
-            (.token_uri                     | type=="string") and
-            (.auth_provider_x509_cert_url   | type=="string") and
-            (.client_x509_cert_url          | type=="string") and
-            (.universe_domain               | type=="string")
+            (.type | type=="string") and
+            (.project_id | type=="string") and
+            (.private_key_id | type=="string") and
+            (.private_key | type=="string") and
+            (.client_email | type=="string") and
+            (.client_id | type=="string") and
+            (.auth_uri | type=="string") and
+            (.token_uri | type=="string") and
+            (.auth_provider_x509_cert_url | type=="string") and
+            (.client_x509_cert_url | type=="string") and
+            (.universe_domain | type=="string")
           ' >/dev/null || {
             echo "Error: SERVICE_ACCOUNT schema invalid"
             exit 1
           }
-          echo "SERVICE_ACCOUNT schema is valid"
 
   prepare-backend:
     runs-on: ubuntu-latest
@@ -94,12 +92,12 @@ jobs:
           GCP_REGION=$(echo "$VARS" | jq -r '.gcloud_region')
           BUCKET_NAME="${PROJECT_NAME}-bucket-tfstate"
           if gsutil ls -p "$GCP_PROJECT" "gs://$BUCKET_NAME" >/dev/null 2>&1; then
-            echo "Bucket already exists: $BUCKET_NAME, skipping"
+            echo "Bucket already exists: $BUCKET_NAME"
           else
             gsutil mb -p "$GCP_PROJECT" -l "$GCP_REGION" "gs://$BUCKET_NAME"
             gcloud storage buckets update gs://$BUCKET_NAME --uniform-bucket-level-access
             gsutil versioning set on "gs://$BUCKET_NAME"
-            echo "Bucket created successfully with versioning enabled: $BUCKET_NAME"
+            echo "Bucket created: $BUCKET_NAME"
           fi
       - name: Create TF Backend
         env:
@@ -115,24 +113,48 @@ jobs:
             }
           }
           EOF
-          echo "Backend file 'backend.tf' has been successfully generated."
-      - name: Upload backend.tf artifact
+          echo "backend.tf file generated successfully"
+      - name: Upload backend.tf
         uses: actions/upload-artifact@v4
         with:
-          name: backend
+          name: tfbackend
           path: backend.tf
 
-  terraform-plan:
+  prepare-tfvars:
     runs-on: ubuntu-latest
-    needs: prepare-backend
+    needs: validate-secrets
+    steps:
+      - name: Generate terraform.auto.tfvars.json
+        env:
+          VARS: ${{ secrets.VARS_JSON }}
+        run: |
+          echo "Storing keys into terraform.auto.tfvars.json:"
+          echo "$VARS" | jq -r 'keys[]' | sed "s/^/ - /"
+          printf '%s\n' "$VARS" > terraform.auto.tfvars.json
+      - name: Upload terraform.auto.tfvars.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfvars
+          path: terraform.auto.tfvars.json
+
+  tf-plan:
+    runs-on: ubuntu-latest
+    needs:
+      - prepare-backend
+      - prepare-tfvars
     timeout-minutes: 5
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Download backend.tf artifact
+      - name: Download backend.tf
         uses: actions/download-artifact@v4
         with:
-          name: backend
+          name: tfbackend
+          path: .
+      - name: Download terraform.auto.tfvars.json
+        uses: actions/download-artifact@v4
+        with:
+          name: tfvars
           path: .
       - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v3
@@ -142,29 +164,13 @@ jobs:
           credentials_json: ${{ secrets.SERVICE_ACCOUNT }}
       - name: Setup gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
-      - name: Build dynamic terraform -var arguments
-        id: tfvars
-        env:
-          VARS: ${{ secrets.VARS_JSON }}
-        run: |
-          VAR_ARGS=""
-          for key in $(echo "$VARS" | jq -r 'keys[]'); do
-            value=$(echo "$VARS" | jq -r --arg k "$key" '.[$k]')
-            VAR_ARGS="$VAR_ARGS -var=\"$key=$value\""
-          done
-          DELIM="EOF_$(openssl rand -hex 8)"
-          {
-            echo "vars<<$DELIM"
-            echo "$VAR_ARGS"
-            echo "$DELIM"
-          } >> "$GITHUB_OUTPUT"
       - name: Terraform init
         run: terraform init -input=false
       - name: Terraform plan
-        run: terraform plan -input=false -no-color ${{ steps.tfvars.outputs.vars }} -out=tfplan
-      - name: Generate visual plan (tfplan_visual)
+        run: terraform plan -input=false -no-color -out=tfplan
+      - name: Generate visual plan
         run: terraform show -no-color tfplan > tfplan_visual
-      - name: Upload tfplan artifacts
+      - name: Upload plan artifacts
         uses: actions/upload-artifact@v4
         with:
           name: tfplan-artifacts
@@ -172,9 +178,12 @@ jobs:
             tfplan
             tfplan_visual
 
-  terraform-apply:
+  tf-apply:
     runs-on: ubuntu-latest
-    needs: terraform-plan
+    needs:
+      - prepare-backend
+      - prepare-tfvars
+      - tf-plan
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -183,11 +192,21 @@ jobs:
         with:
           name: tfplan-artifacts
           path: .
+      - name: Download backend.tf
+        uses: actions/download-artifact@v4
+        with:
+          name: tfbackend
+          path: .
+      - name: Download terraform.auto.tfvars.json
+        uses: actions/download-artifact@v4
+        with:
+          name: tfvars
+          path: .
       - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v3
       - name: Install Ansible
         run: sudo apt-get install -y ansible
-      - name: Await Manual Approval (5 min timeout)
+      - name: Await Manual Approval
         id: approval
         uses: trstringer/manual-approval@v1
         with:
