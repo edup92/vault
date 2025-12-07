@@ -71,14 +71,14 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Setup gcloud CLI
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ fromJson(secrets.VARS_JSON).gcloud_project_id }}
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.SERVICE_ACCOUNT }}
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ fromJson(secrets.VARS_JSON).gcloud_project_id }}
       - name: Create or check state bucket
         env:
           PROJECT_NAME: ${{ fromJson(secrets.VARS_JSON).project_name }}
@@ -151,12 +151,12 @@ jobs:
           path: .
       - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v3
-      - name: Setup gcloud CLI
-        uses: google-github-actions/setup-gcloud@v2
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.SERVICE_ACCOUNT }}
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
       - name: Terraform init
         run: terraform init -input=false
       - name: Terraform plan
@@ -213,12 +213,12 @@ jobs:
           path: .
       - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v3
-      - name: Setup gcloud CLI
-        uses: google-github-actions/setup-gcloud@v2
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.SERVICE_ACCOUNT }}
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
       - name: Install Ansible
         run: sudo apt-get install -y ansible
       - name: Terraform init
