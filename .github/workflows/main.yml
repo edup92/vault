@@ -44,8 +44,7 @@ jobs:
             (.oauth_client_secret | type=="string") and
             (.smtp_port           | type=="number") and
             (.allowed_countries   | type=="array")
-          ' <<<"$VARS" >/dev/null \
-          || { echo "Error: VARS_JSON schema invalid"; exit 1; }
+          ' <<<"$VARS" >/dev/null || { echo "Error: VARS_JSON schema invalid"; exit 1; }
           echo "VARS_JSON schema valid"
       - name: Validate SERVICE_ACCOUNT schema
         env:
@@ -63,8 +62,7 @@ jobs:
             (.auth_provider_x509_cert_url | type=="string") and
             (.client_x509_cert_url | type=="string") and
             (.universe_domain | type=="string")
-          ' <<<"$SA" >/dev/null \
-          || { echo "Error: SERVICE_ACCOUNT schema invalid"; exit 1; }
+          ' <<<"$SA" >/dev/null || { echo "Error: SERVICE_ACCOUNT schema invalid"; exit 1; }
           echo "SERVICE_ACCOUNT schema valid"
 
   prepare-backend:
@@ -76,19 +74,18 @@ jobs:
       - name: Setup gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: "${{ fromJSON(secrets.VARS_JSON).gcloud_project_id }}"
+          project_id: ${{ fromJson(secrets.VARS_JSON).gcloud_project_id }}
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.SERVICE_ACCOUNT }}
       - name: Create or check state bucket
         env:
-          VARS: ${{ secrets.VARS_JSON }}
+          PROJECT_NAME: ${{ fromJson(secrets.VARS_JSON).project_name }}
+          GCP_PROJECT: ${{ fromJson(secrets.VARS_JSON).gcloud_project_id }}
+          GCP_REGION: ${{ fromJson(secrets.VARS_JSON).gcloud_region }}
+          BUCKET_NAME: ${{ fromJson(secrets.VARS_JSON).project_name }}-bucket-tfstate
         run: |
-          PROJECT_NAME=$(echo "$VARS" | jq -r '.project_name')
-          GCP_PROJECT=$(echo "$VARS" | jq -r '.gcloud_project_id')
-          GCP_REGION=$(echo "$VARS" | jq -r '.gcloud_region')
-          BUCKET_NAME="${PROJECT_NAME}-bucket-tfstate"
           if gsutil ls -p "$GCP_PROJECT" "gs://$BUCKET_NAME" >/dev/null 2>&1; then
             echo "Bucket already exists: $BUCKET_NAME, skipping creation"
           else
@@ -99,10 +96,8 @@ jobs:
           fi
       - name: Create TF Backend
         env:
-          VARS: ${{ secrets.VARS_JSON }}
+          BUCKET_NAME: ${{ fromJson(secrets.VARS_JSON).project_name }}-bucket-tfstate
         run: |
-          PROJECT_NAME=$(echo "$VARS" | jq -r '.project_name')
-          BUCKET_NAME="${PROJECT_NAME}-bucket-tfstate"
           tee backend.tf > /dev/null <<EOF
           terraform {
             backend "gcs" {
@@ -137,10 +132,10 @@ jobs:
 
   tf-plan:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs:
       - prepare-backend
       - prepare-tfvars
-    timeout-minutes: 5
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -178,8 +173,7 @@ jobs:
 
   approbal:
     runs-on: ubuntu-latest
-    needs:
-      - tf-plan
+    needs: tf-plan
     steps:
       - name: Download tfplan artifacts
         uses: actions/download-artifact@v4
@@ -198,8 +192,7 @@ jobs:
 
   tf-apply:
     runs-on: ubuntu-latest
-    needs:
-      - approbal
+    needs: approbal
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
