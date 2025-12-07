@@ -26,7 +26,7 @@ jobs:
         env:
           VARS: ${{ secrets.VARS_JSON }}
         run: |
-          echo "$VARS" | jq -e '
+          jq -e '
             (.gcloud_project_id   | type=="string") and
             (.gcloud_region       | type=="string") and
             (.cf_token            | type=="string") and
@@ -44,15 +44,14 @@ jobs:
             (.oauth_client_secret | type=="string") and
             (.smtp_port           | type=="number") and
             (.allowed_countries   | type=="array")
-          ' >/dev/null || {
-            echo "Error: VARS_JSON schema invalid"
-            exit 1
-          }
+          ' <<<"$VARS" >/dev/null \
+          || { echo "Error: VARS_JSON schema invalid"; exit 1; }
+          echo "VARS_JSON schema valid"
       - name: Validate SERVICE_ACCOUNT schema
         env:
           SA: ${{ secrets.SERVICE_ACCOUNT }}
         run: |
-          echo "$SA" | jq -e '
+          jq -e '
             (.type | type=="string") and
             (.project_id | type=="string") and
             (.private_key_id | type=="string") and
@@ -64,10 +63,9 @@ jobs:
             (.auth_provider_x509_cert_url | type=="string") and
             (.client_x509_cert_url | type=="string") and
             (.universe_domain | type=="string")
-          ' >/dev/null || {
-            echo "Error: SERVICE_ACCOUNT schema invalid"
-            exit 1
-          }
+          ' <<<"$SA" >/dev/null \
+          || { echo "Error: SERVICE_ACCOUNT schema invalid"; exit 1; }
+          echo "SERVICE_ACCOUNT schema valid"
 
   prepare-backend:
     runs-on: ubuntu-latest
@@ -92,12 +90,12 @@ jobs:
           GCP_REGION=$(echo "$VARS" | jq -r '.gcloud_region')
           BUCKET_NAME="${PROJECT_NAME}-bucket-tfstate"
           if gsutil ls -p "$GCP_PROJECT" "gs://$BUCKET_NAME" >/dev/null 2>&1; then
-            echo "Bucket already exists: $BUCKET_NAME"
+            echo "Bucket already exists: $BUCKET_NAME, skipping creation"
           else
             gsutil mb -p "$GCP_PROJECT" -l "$GCP_REGION" "gs://$BUCKET_NAME"
             gcloud storage buckets update gs://$BUCKET_NAME --uniform-bucket-level-access
             gsutil versioning set on "gs://$BUCKET_NAME"
-            echo "Bucket created: $BUCKET_NAME"
+            echo "Bucket created with versioning: $BUCKET_NAME"
           fi
       - name: Create TF Backend
         env:
