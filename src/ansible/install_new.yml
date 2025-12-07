@@ -137,7 +137,7 @@
               ADMIN_TOKEN={{ admin_pass }}
               TZ=Europe/Madrid
               SMTP_HOST={{ smtp_host }}
-              SMTP_FROM={{ smtp_from }}
+              SMTP_FROM={{ smtp_username }}
               SMTP_PORT={{ smtp_port }}
               SMTP_SECURITY={{ smtp_security }}
               SMTP_USERNAME={{ smtp_username }}
