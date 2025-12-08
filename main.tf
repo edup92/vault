@@ -233,23 +233,3 @@ resource "cloudflare_zero_trust_organization" "zerotrust_org" {
   name        = local.zerotrust_name
   auth_domain = var.zerotrust_record
 }
-
-resource "cloudflare_access_application" "app" {
-  account_id        = var.cf_accountid
-  name              = "Mi App Interna"
-  domain            = "app.example.com"
-  type              = "self_hosted"
-  session_duration  = "24h"
-}
-
-resource "cloudflare_access_policy" "policy" {
-  account_id     = var.cloudflare_account_id
-  application_id = cloudflare_access_application.app.id
-  name           = "Allow Google Workspace"
-  decision       = "allow"
-  precedence     = 1
-
-  include {
-    email_domain = ["example.com"]
-  }
-}
