@@ -181,6 +181,9 @@ resource "google_compute_backend_service" "backend_main" {
   backend {
     group = google_compute_instance_group.instancegroup_main.self_link
   }
+  lifecycle {
+    ignore_changes = [iap]         # <- clave para no deshabilitarlo
+  }
 }
 
 resource "google_compute_url_map" "urlmap_main" {
@@ -233,7 +236,7 @@ resource "null_resource" "null_ansible_install" {
       INSTANCE_USER  = local.ansible_user
       INSTANCE_SSH_KEY = nonsensitive(tls_private_key.pem_ssh.private_key_pem)
       FW_TEMPSSH_NAME  = google_compute_firewall.fw_tempssh.name
-      VARS_JSON = nonsensitive(local.ansible_vars)
+      VARS_JSON = nonsensitive(local.fgoogle_compute_backend_service)
       PLAYBOOK_PATH = local.ansible_path
     }
     command = local.ansible_null_resource
