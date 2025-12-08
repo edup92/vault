@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ### CONFIG ###
-USERNAME="cicd"
+USERNAME="cicd-$(date +%s)"
 read -p "Enter your Google Cloud PROJECT_ID: " PROJECT_ID
 SA_EMAIL="$USERNAME@$PROJECT_ID.iam.gserviceaccount.com"
 ROLES=(
