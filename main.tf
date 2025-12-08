@@ -219,29 +219,7 @@ resource "google_compute_global_forwarding_rule" "fr_main" {
 
 # Playbook
 
-resource "null_resource" "null_ansible_install" {
-  depends_on = [
-    tls_private_key.pem_ssh,
-    google_compute_instance.instance_main,
-    google_compute_firewall.fw_tempssh,
-  ]
-  triggers = {
-    instance_id   = google_compute_instance.instance_main.id
-    playbook_hash = filesha256(local.ansible_path)
-  }
-  provisioner "local-exec" {
-    environment = {
-      PROJECT_ID    = var.gcloud_project_id
-      INSTANCE_IP    = google_compute_instance.instance_main.network_interface[0].access_config[0].nat_ip
-      INSTANCE_USER  = local.ansible_user
-      INSTANCE_SSH_KEY = nonsensitive(tls_private_key.pem_ssh.private_key_pem)
-      FW_TEMPSSH_NAME  = google_compute_firewall.fw_tempssh.name
-      VARS_JSON = nonsensitive(local.ansible_vars)
-      PLAYBOOK_PATH = local.ansible_path
-    }
-    command = local.ansible_null_resource
-  }
-}
+
 
 # Outpupts
 
