@@ -236,7 +236,7 @@ resource "null_resource" "null_ansible_install" {
       INSTANCE_USER  = local.ansible_user
       INSTANCE_SSH_KEY = nonsensitive(tls_private_key.pem_ssh.private_key_pem)
       FW_TEMPSSH_NAME  = google_compute_firewall.fw_tempssh.name
-      VARS_JSON = nonsensitive(local.fgoogle_compute_backend_service)
+      VARS_JSON = nonsensitive(local.ansible_vars)
       PLAYBOOK_PATH = local.ansible_path
     }
     command = local.ansible_null_resource
