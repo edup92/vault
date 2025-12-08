@@ -225,7 +225,5 @@ jobs:
           fi
       - name: Terraform init
         run: terraform init -input=false
-      - name: test
-        run: terraform untaint google_compute_managed_ssl_certificate.ssl_main ; terraform plan -out=tfplan
       - name: Terraform apply
         run: terraform apply -auto-approve tfplan
