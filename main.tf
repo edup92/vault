@@ -193,7 +193,6 @@ resource "google_compute_backend_service" "backend_main" {
     group = google_compute_instance_group.instancegroup_main.self_link
   }
   iap {
-    enabled               = true
     oauth2_client_id     = google_iap_client.iap_client.client_id
     oauth2_client_secret = google_iap_client.iap_client.secret
   }
