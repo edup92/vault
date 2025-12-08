@@ -217,16 +217,9 @@ resource "cloudflare_ruleset" "ruleset_cache" {
 
 # Build a safe expression for allowed countries (empty list => no block)
 locals {
-  # Si la lista no está vacía, bloquea todo lo que NO esté en la lista permitida.
-  # Ejemplo de resultado: not (ip.geoip.country in { "ES" "PT" })
-  allowed_countries_expr = length(var.allowed_countries) > 0 ?
-    format(
-      "not (ip.geoip.country in { %s })",
-      join(" ", [for c in var.allowed_countries : format("\"%s\"", c)])
-    )
-    :
-    "false"
+  allowed_countries_expr = length(var.allowed_countries) > 0 ? format("not (ip.geoip.country in { %s })", join(" ", [for c in var.allowed_countries : format("\"%s\"", c)])) : "false"
 }
+
 
 
 # Custom firewall rule: block all traffic not from allowed countries
@@ -243,6 +236,7 @@ resource "cloudflare_ruleset" "ruleset_waf" {
     action       = "block"
   }]
 }
+
 
 
 # Zero Trust organization
