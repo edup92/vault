@@ -7,7 +7,6 @@
   tasks:
     - name: Installations
       block:
-
         - name: Install prerequisites
           apt:
             name:
