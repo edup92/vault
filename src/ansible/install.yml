@@ -185,29 +185,8 @@
                     - ../data:/data
                   env_file:
                     - ../env/vaultwarden.env
-                  expose:
-                    - "80"
-                  networks:
-                    - internal
-
-                oauth2-proxy:
-                  image: quay.io/oauth2-proxy/oauth2-proxy:latest
-                  container_name: oauth2-proxy
-                  restart: always
-                  volumes:
-                    - ../env/allowed_emails.txt:/etc/oauth2_proxy/allowed_emails.txt:ro
-                    - ../ssl/fullchain.pem:/ssl/fullchain.pem
-                    - ../ssl/privkey.pem:/ssl/privkey.pem
-                  env_file:
-                    - ../env/oauth-proxy.env
-                  networks:
-                    - internal
                   ports:
-                    - "443:443"
-
-              networks:
-                internal:
-                  driver: bridge
+                    - "80:80"
             owner: vaultwarden
             group: vaultwarden
             mode: "0644"

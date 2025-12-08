@@ -1,19 +1,13 @@
 # Vault
 
-## Vaultwarden selfhosted in docker containers, with Google SSO Auth, Hosted in Google cloud, DNS and WAF in Cloudflare
+## Vaultwarden selfhosted in docker containers, with Google SSO Auth, Hosted in Google cloud
 
 ## Installation
-- Create zone in cloudflare and set DNS Servers
-- Create Account token in cloudflare with permissions:
-  - Account - DNS Settings:Edit
-  All zones - DNS Settings:Edit, Cache Rules:Edit, Zone WAF:Edit, Zone Settings:Edit, Zone:Edit, SSL and Certificates:Edit, Page Rules:Edit, Firewall Services:Edit, DNS:Edit
-- Create google account project
-- Create OAuth credentials
-  - authoriced origins: https://subdomain.mydomain.tld
-  - authoriced redirect: https://subdomain.mydomain.tld/oauth2/callback
--  Run bootstrap.sh on Cloudshell
-- Paste json data from bootstrap.sh as Github Actions Secret with name SERVICE_ACCOUNT 
-- Paste this json as Github Actions Secret with name VARS_JSON:
+
+1 - Create google account project
+2 -  Run bootstrap.sh on Cloudshell
+3 - Paste json data from bootstrap.sh as Github Actions Secret with name SERVICE_ACCOUNT 
+4 - Paste this json as Github Actions Secret with name VARS_JSON:
 
 {
   "gcloud_project_id":"",
@@ -35,8 +29,10 @@
   "oauth_client_secret": ""
 }
 
-- Run Github Actions
+5 - Run Github Actions
+6 - Go to https://console.cloud.google.com/security/iap?tab=applications&hl=es-419&project=MYPROJECT and enable IAP
+7 - Click in the same window on the created backend, click on add principal, on principal write authorized email (x@gmail.com) and add the role "roles/iap.httpsResourceAccessor"
+8 - Click in the same window on the created backend, click on configuration, set custom oauth, generate credentials and save
+7 - Add user to https://yourdomain.tld/admin/users/overview
 
-- Check with: sudo docker ps
-
-- Add user to https://yourdomain.tld/admin/users/overview
+Debug: Check docker instances with: sudo docker ps
