@@ -91,7 +91,7 @@
             path: "{{ item }}"
             owner: vaultwarden
             group: vaultwarden
-            mode: "0600"
+            mode: "0644"
           loop:
             - /opt/vaultwarden/ssl/privkey.pem
             - /opt/vaultwarden/ssl/fullchain.pem

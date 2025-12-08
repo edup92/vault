@@ -36,3 +36,7 @@
 }
 
 - Run Github Actions
+
+- Check with:
+
+sudo docker ps
