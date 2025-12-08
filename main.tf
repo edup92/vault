@@ -175,6 +175,7 @@ resource "null_resource" "null_ansible_install" {
 
 # Cloudflare
 
+# DNS A record (Cloudflare provider v5+: no allow_overwrite)
 resource "cloudflare_dns_record" "dnsrecord_main" {
   zone_id = data.cloudflare_zone.cf_zone.id
   name    = var.dns_record
@@ -182,65 +183,63 @@ resource "cloudflare_dns_record" "dnsrecord_main" {
   content = google_compute_instance.instance_main.network_interface[0].access_config[0].nat_ip
   ttl     = 1
   proxied = true
-  allow_overwrite = true
 }
 
-resource "cloudflare_zone_setting" "zone_ssl" {
-  zone_id    = data.cloudflare_zone.cf_zone.id
-  setting_id = "ssl"
-  value      = "full"
+# Prefer a single zone_settings_override over multiple zone_setting resources
+resource "cloudflare_zone_settings_override" "zone_settings" {
+  zone_id = data.cloudflare_zone.cf_zone.id
+
+  settings {
+    ssl                       = "full"
+    min_tls_version           = "1.2"
+    automatic_https_rewrites  = "on"
+    always_use_https          = "on"
+  }
 }
 
-resource "cloudflare_zone_setting" "zone_tls" {
-  zone_id    = data.cloudflare_zone.cf_zone.id
-  setting_id = "min_tls_version"
-  value      = "1.2"
-}
-
-resource "cloudflare_zone_setting" "zone_rewrites" {
-  zone_id    = data.cloudflare_zone.cf_zone.id
-  setting_id = "automatic_https_rewrites"
-  value      = "on"
-}
-
-resource "cloudflare_zone_setting" "zone_redirecthttps" {
-  zone_id    = data.cloudflare_zone.cf_zone.id
-  setting_id = "always_use_https"
-  value      = "on"
-}
-
+# Optional: global cache bypass (use with care; affects whole zone)
 resource "cloudflare_ruleset" "ruleset_cache" {
   zone_id = data.cloudflare_zone.cf_zone.id
   name    = "disable_cache_everything"
   kind    = "zone"
   phase   = "http_request_cache_settings"
-  rules {
-    enabled     = true
-    description = "Soft disable cache (Terraform-safe)"
-    expression  = "true"
-    action = "set_cache_settings"
-    action_parameters {
+
+  rules = [{
+    enabled            = true
+    description        = "Soft disable cache (Terraform-safe)"
+    expression         = "true"
+    action             = "set_cache_settings"
+    action_parameters  = {
       cache = false
     }
-  }
+  }]
 }
 
+# Build a safe expression for allowed countries (empty list => no block)
+locals {
+  allowed_countries_expr = length(var.allowed_countries) > 0 ?
+    format("not (ip.geoip.country in { %s })",
+      join(" ", [for c in var.allowed_countries : format("\"%s\"", c)])
+    ) :
+    "false"
+}
+
+# Custom firewall rule: block all traffic not from allowed countries
 resource "cloudflare_ruleset" "ruleset_waf" {
   zone_id = data.cloudflare_zone.cf_zone.id
   name    = "country-access-control"
   kind    = "zone"
   phase   = "http_request_firewall_custom"
-  rules {
-    enabled     = true
-    description = "Block all non-allowed countries"
-    expression = "not (${join(" or ", [
-      for c in var.allowed_countries :
-      "(ip.geoip.country eq \"${c}\")"
-    ])})"
-    action = "block"
-  }
+
+  rules = [{
+    enabled      = true
+    description  = "Block all non-allowed countries"
+    expression   = local.allowed_countries_expr
+    action       = "block"
+  }]
 }
 
+# Zero Trust organization
 resource "cloudflare_zero_trust_organization" "zerotrust_org" {
   account_id  = var.cf_accountid
   name        = local.zerotrust_name
