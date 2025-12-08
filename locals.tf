@@ -21,7 +21,7 @@ locals {
 
   # Cloudflare
 
-  zerotrust_name = "${var.project_name}-zerotrust-main"
+  zerotrust_name = "zerotrust-main"
 
   # Ansible
   ansible_null_resource = "./src/null_resources/ansible.sh"

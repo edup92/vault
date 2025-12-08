@@ -31,6 +31,11 @@ variable "dns_domain" {
   type        = string
 }
 
+variable "zerotrust_record" {
+  description = "DNS record"
+  type        = string
+}
+
 variable "dns_record" {
   description = "DNS record"
   type        = string
