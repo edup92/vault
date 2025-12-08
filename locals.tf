@@ -1,31 +1,28 @@
-
 locals {
   # Instances
-
-  instance_main_name  = "${var.project_name}-instance-main"
-  disk_main_name       = "${var.project_name}-disk-main"
-  snapshot_main_name = "${var.project_name}-snapshot-main"
+  instance_main_name = "${var.project_name}-instance-main"
+  instance_type      = "e2-micro"
+  instance_os        = "projects/ubuntu-os-cloud/global/images/ubuntu-minimal-2204-jammy-amd64-v20251113"
+  disk_main_name     = "${var.project_name}-disk-main"
+  disk_type          = "pd-balanced"
 
   # Secrets
-
-  secret_pem_ssh    = "${var.project_name}-secret-pem-ssh"
+  secret_pem_ssh = "${var.project_name}-secret-pem-ssh"
 
   # Network
-
-  firewall_cf_name = "${var.project_name}-firewall-cf"
-  firewall_localssh_name = "${var.project_name}-firewall-localssh"
-  firewall_tempssh_name = "${var.project_name}-firewall-tempssh"
+  firewall_cf_name        = "${var.project_name}-firewall-cf"
+  firewall_localssh_name  = "${var.project_name}-firewall-localssh"
+  firewall_tempssh_name   = "${var.project_name}-firewall-tempssh"
 
   # Oauth
-
-  ouath_brand_name = "${var.project_name}-brand-main"
+  ouath_brand_name  = "${var.project_name}-brand-main"
   ouath_client_name = "${var.project_name}-client-main"
 
   # Ansible
-
   ansible_null_resource = "./src/null_resources/ansible.sh"
-  ansible_path = "./src/ansible/install.yml"
-  ansible_user = "ubuntu"
+  ansible_path          = "./src/ansible/install.yml"
+  ansible_user          = "ubuntu"
+
   ansible_vars = jsonencode({
     dns_record          = var.dns_record
     admin_email         = var.admin_email
@@ -39,5 +36,4 @@ locals {
     oauth_client_secret = var.oauth_client_secret
     allowed_countries   = var.allowed_countries
   })
-
 }
