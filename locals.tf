@@ -5,6 +5,7 @@ locals {
   instance_os        = "projects/ubuntu-os-cloud/global/images/ubuntu-minimal-2204-jammy-amd64-v20251113"
   disk_main_name     = "${var.project_name}-disk-main"
   disk_type          = "pd-balanced"
+  snapshot_main_name = "${var.project_name}-snapshot-main"
 
   # Secrets
   secret_pem_ssh = "${var.project_name}-secret-pem-ssh"
