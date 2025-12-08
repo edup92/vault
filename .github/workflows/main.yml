@@ -29,8 +29,6 @@ jobs:
           jq -e '
             (.gcloud_project_id   | type=="string") and
             (.gcloud_region       | type=="string") and
-            (.cf_token            | type=="string") and
-            (.cf_accountid        | type=="string") and
             (.project_name        | type=="string") and
             (.dns_record          | type=="string") and
             (.admin_email         | type=="string") and
@@ -41,8 +39,7 @@ jobs:
             (.smtp_password       | type=="string") and
             (.oauth_client_id     | type=="string") and
             (.oauth_client_secret | type=="string") and
-            (.smtp_port           | type=="number") and
-            (.allowed_countries   | type=="array")
+            (.smtp_port           | type=="number")
           ' <<<"$VARS" >/dev/null || { echo "Error: VARS_JSON schema invalid"; exit 1; }
           echo "VARS_JSON schema valid"
       - name: Validate SERVICE_ACCOUNT schema
