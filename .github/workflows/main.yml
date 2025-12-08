@@ -37,8 +37,6 @@ jobs:
             (.smtp_security       | type=="string") and
             (.smtp_username       | type=="string") and
             (.smtp_password       | type=="string") and
-            (.oauth_client_id     | type=="string") and
-            (.oauth_client_secret | type=="string") and
             (.smtp_port           | type=="number")
           ' <<<"$VARS" >/dev/null || { echo "Error: VARS_JSON schema invalid"; exit 1; }
           echo "VARS_JSON schema valid"
