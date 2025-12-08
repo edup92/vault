@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ### CONFIG ###
-USERNAME="${1:-admin-$(date +%s)}"
+USERNAME="cicd"
 read -p "Enter your Google Cloud PROJECT_ID: " PROJECT_ID
 SA_EMAIL="$USERNAME@$PROJECT_ID.iam.gserviceaccount.com"
 ROLES=(
@@ -17,18 +17,20 @@ gcloud config set project "$PROJECT_ID"
 
 ### 2. Create Service Account
 echo "[INFO] Creating Service Account..."
-gcloud iam service-accounts create "$USERNAME"
+gcloud iam service-accounts create "$USERNAME" \
+  --project="$PROJECT_ID" \
+  --display-name="CICD"
 echo "[INFO] Service Account created: $SA_EMAIL"
 
 ### 3. Assign role to the Service Account
 echo "[INFO] Assigning roles to $SA_EMAIL"
-
 for ROLE in "${ROLES[@]}"; do
   gcloud projects add-iam-policy-binding "$PROJECT_ID" \
     --member="serviceAccount:$SA_EMAIL" \
     --role="$ROLE" \
     --quiet
 done
+echo "[INFO] Roles Assigned to $SA_EMAIL"
 
 ### 4. Generate JSON key inline
 echo "[INFO] Generating JSON key (inline output):"
