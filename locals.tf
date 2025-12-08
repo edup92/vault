@@ -39,8 +39,5 @@ locals {
     smtp_port           = var.smtp_port
     smtp_username       = var.smtp_username
     smtp_password       = var.smtp_password
-    oauth_client_id     = var.oauth_client_id
-    oauth_client_secret = var.oauth_client_secret
-    allowed_countries   = var.allowed_countries
   })
 }
