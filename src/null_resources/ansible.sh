@@ -96,6 +96,7 @@ echo "Marked as installed"
 echo "Restoring firewall: $FW_TEMPSSH_NAME"
 
 gcloud compute firewall-rules update "$FW_TEMPSSH_NAME" \
-  --project="$PROJECT_ID"
+  --project="$PROJECT_ID" \
+  --disabled
 
 echo "DONE"
