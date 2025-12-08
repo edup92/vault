@@ -37,6 +37,6 @@
 
 - Run Github Actions
 
-- Check with:
+- Check with: sudo docker ps
 
-sudo docker ps
+- Add user to https://yourdomain.tld/admin/users/overview
