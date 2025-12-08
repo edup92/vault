@@ -25,11 +25,11 @@
   "oauth_client_secret": ""
 }
 
-5 - Run Github Actions
-6 - Go to https://console.cloud.google.com/security/iap?tab=applications&hl=es-419&project=MYPROJECT and enable IAP
-7 - Click in the same window on the created backend, click on add principal, on principal write authorized email (x@gmail.com) and add the role "roles/iap.httpsResourceAccessor"
-8 - Click in the same window on the created backend, click on configuration, set custom oauth, generate credentials and save
-9 - Disable and enable IAP, check if works
-10 - Add user to https://yourdomain.tld/admin/users/overview
+- 5 - Run Github Actions
+- 6 - Go to https://console.cloud.google.com/security/iap?tab=applications&hl=es-419&project=MYPROJECT and enable IAP
+- 7 - Click in the same window on the created backend, click on add principal, on principal write authorized email (x@gmail.com) and add the role "roles/iap.httpsResourceAccessor"
+- 8 - Click in the same window on the created backend, click on configuration, set custom oauth, generate credentials and save
+- 9 - Disable and enable IAP, check if works
+- 10 - Add user to https://yourdomain.tld/admin/users/overview
 
-Debug: Check docker instances with: sudo docker ps
+- Debug: Check docker instances with: sudo docker ps
