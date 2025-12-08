@@ -37,7 +37,9 @@ done
 
 if [ "$OK" -ne 1 ]; then
   echo "ERROR: Instance unreachable, restoring firewall"
-  gcloud compute firewall-rules update "$FW_TEMPSSH_NAME" --project="$PROJECT_ID"
+  gcloud compute firewall-rules update "$FW_TEMPSSH_NAME" \
+    --project="$PROJECT_ID" \
+    --disabled
   exit 1
 fi
 
