@@ -43,7 +43,6 @@ resource "google_compute_instance" "instance_main" {
     device_name = local.disk_main_name
     initialize_params {
       image = "projects/ubuntu-os-cloud/global/images/ubuntu-minimal-2404-noble-amd64-v20251002"
-      size  = 25
       type  = "pd-balanced"
     }
   }
