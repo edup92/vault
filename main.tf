@@ -185,14 +185,28 @@ resource "cloudflare_dns_record" "dnsrecord_main" {
   allow_overwrite = true
 }
 
-resource "cloudflare_zone_settings" "zonesettings_main" {
-  zone_id = data.cloudflare_zone.zone_main.zone_id
-  settings {
-    ssl                     = "full"
-    min_tls_version         = "1.2"
-    automatic_https_rewrites = true
-    always_use_https        = true
-  }
+resource "cloudflare_zone_setting" "zone_ssl" {
+  zone_id    = data.cloudflare_zone.zone_main.zone_id
+  setting_id = "ssl"
+  value      = "full"
+}
+
+resource "cloudflare_zone_setting" "zone_tls" {
+  zone_id    = data.cloudflare_zone.zone_main.zone_id
+  setting_id = "min_tls_version"
+  value      = "1.2"
+}
+
+resource "cloudflare_zone_setting" "zone_rewrites" {
+  zone_id    = data.cloudflare_zone.zone_main.zone_id
+  setting_id = "automatic_https_rewrites"
+  value      = "on"
+}
+
+resource "cloudflare_zone_setting" "zone_redirecthttps" {
+  zone_id    = data.cloudflare_zone.zone_main.zone_id
+  setting_id = "always_use_https"
+  value      = "on"
 }
 
 resource "cloudflare_ruleset" "ruleset_cache" {
@@ -204,9 +218,7 @@ resource "cloudflare_ruleset" "ruleset_cache" {
     enabled     = true
     description = "Soft disable cache (Terraform-safe)"
     expression  = "true"
-
     action = "set_cache_settings"
-
     action_parameters {
       cache = false
     }
@@ -221,12 +233,10 @@ resource "cloudflare_ruleset" "ruleset_waf" {
   rules {
     enabled     = true
     description = "Block all non-allowed countries"
-
     expression = "not (${join(" or ", [
       for c in var.allowed_countries :
       "(ip.geoip.country eq \"${c}\")"
     ])})"
-
     action = "block"
   }
 }
