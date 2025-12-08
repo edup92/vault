@@ -175,28 +175,28 @@ resource "null_resource" "null_ansible_install" {
 
 # Cloudflare
 
-resource "cloudflare_record" "dnsrecord_main" {
-  zone_id = data.cloudflare_zone.zone_main.id
+resource "cloudflare_dns_record" "dnsrecord_main" {
+  zone_id = data.cloudflare_zone.zone_main.zone_id
   name    = var.dns_record
   type    = "A"
-  value   = google_compute_instance.instance_main.network_interface[0].access_config[0].nat_ip
+  content = google_compute_instance.instance_main.network_interface[0].access_config[0].nat_ip
   ttl     = 1
   proxied = true
   allow_overwrite = true
 }
 
-resource "cloudflare_zone_settings_override" "zonesettings_main" {
-  zone_id = data.cloudflare_zone.zone_main.id
+resource "cloudflare_zone_settings" "zonesettings_main" {
+  zone_id = data.cloudflare_zone.zone_main.zone_id
   settings {
     ssl                     = "full"
     min_tls_version         = "1.2"
-    automatic_https_rewrites = "on"
-    always_use_https        = "on"
+    automatic_https_rewrites = true
+    always_use_https        = true
   }
 }
 
 resource "cloudflare_ruleset" "ruleset_cache" {
-  zone_id = data.cloudflare_zone.zone_main.id
+  zone_id = data.cloudflare_zone.zone_main.zone_id
   name    = "disable_cache_everything"
   kind    = "zone"
   phase   = "http_request_cache_settings"
@@ -204,7 +204,9 @@ resource "cloudflare_ruleset" "ruleset_cache" {
     enabled     = true
     description = "Soft disable cache (Terraform-safe)"
     expression  = "true"
+
     action = "set_cache_settings"
+
     action_parameters {
       cache = false
     }
@@ -212,19 +214,20 @@ resource "cloudflare_ruleset" "ruleset_cache" {
 }
 
 resource "cloudflare_ruleset" "ruleset_waf" {
-  zone_id = data.cloudflare_zone.zone_main.id
+  zone_id = data.cloudflare_zone.zone_main.zone_id
   name    = "country-access-control"
   kind    = "zone"
   phase   = "http_request_firewall_custom"
-
   rules {
     enabled     = true
     description = "Block all non-allowed countries"
-    expression  = "not (${join(" or ", [
+
+    expression = "not (${join(" or ", [
       for c in var.allowed_countries :
       "(ip.geoip.country eq \"${c}\")"
     ])})"
-    action      = "block"
+
+    action = "block"
   }
 }
 
