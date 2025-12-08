@@ -96,8 +96,8 @@ resource "google_compute_resource_policy" "snapshot_policy" {
 
 resource "google_compute_disk_resource_policy_attachment" "disk_policy_attachment" {
   name    = google_compute_resource_policy.snapshot_policy.name
-  disk    = google_compute_instance.instance_main.name
-  zone    = data.google_compute_zones.available.names[0]
+  disk    = google_compute_instance.instance_main.boot_disk[0].device_name
+  zone    = google_compute_instance.instance_main.zone
   project = var.gcloud_project_id
   depends_on = [google_compute_instance.instance_main]
 }
