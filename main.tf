@@ -227,6 +227,7 @@ resource "null_resource" "null_ansible_install" {
   triggers = {
     instance_id   = google_compute_instance.instance_main.id
     playbook_hash = filesha256(local.ansible_path)
+    vars_json = local.ansible_vars
   }
   provisioner "local-exec" {
     environment = {
