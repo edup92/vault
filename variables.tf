@@ -16,26 +16,6 @@ variable "gcloud_region" {
   type        = string
 }
 
-variable "cf_token" {
-  description = "Cloudflare Token"
-  type        = string
-}
-
-variable "cf_accountid" {
-  description = "Cloudflare Account ID"
-  type        = string
-}
-
-variable "dns_domain" {
-  description = "Fully Qualified Domain Name (FQDN) "
-  type        = string
-}
-
-variable "zerotrust_record" {
-  description = "DNS record"
-  type        = string
-}
-
 variable "dns_record" {
   description = "DNS record"
   type        = string

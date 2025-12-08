@@ -118,8 +118,8 @@ resource "google_compute_firewall" "fw_localssh" {
   target_tags   = [google_compute_instance.instance_main.name]
 }
 
-resource "google_compute_firewall" "fw_cf" {
-  name    = local.firewall_cf_name
+resource "google_compute_firewall" "fw_lb" {
+  name    = local.firewall_lb_name
   project = var.gcloud_project_id
   network = "default"
   direction = "INGRESS"
@@ -128,7 +128,7 @@ resource "google_compute_firewall" "fw_cf" {
     protocol = "tcp"
     ports    = ["443"]
   }
-  source_ranges = data.cloudflare_ip_ranges.cf_ip.ipv4_cidrs
+  source_ranges = ["35.191.0.0/16","130.211.0.0/22"]
   target_tags   = [google_compute_instance.instance_main.name]
 }
 
@@ -145,6 +145,96 @@ resource "google_compute_firewall" "fw_tempssh" {
   source_ranges = ["0.0.0.0/0"]
   target_tags   = [google_compute_instance.instance_main.name]
   disabled = true
+}
+
+# LB
+
+resource "google_iap_brand" "iap_brand" {
+  project           = var.gcloud_project_id
+  support_email     = var.admin_email
+  application_title = local.iap_brand_name
+}
+
+resource "google_iap_client" "iap_client" {
+  brand        = google_iap_brand.iap_brand.name
+  display_name = local.iap_client_name
+}
+
+resource "google_compute_instance_group" "instancegroup_main" {
+  name        = local.instancegroup_main_name
+  zone    = data.google_compute_zones.available.names[0]
+  instances = [google_compute_instance.instance_main.self_link]
+  named_port {
+    name = "http"
+    port = 80
+  }
+}
+
+resource "google_compute_health_check" "healthcheck_main" {
+  name                = local.healthcheck_main_name
+  check_interval_sec  = 5
+  timeout_sec         = 5
+  healthy_threshold   = 2
+  unhealthy_threshold = 2
+  http_health_check {
+    port         = 80
+    request_path = "/"
+  }
+}
+
+resource "google_compute_backend_service" "backend_main" {
+  name                  = local.backend_main_name
+  protocol              = "HTTP"
+  port_name             = "http"
+  load_balancing_scheme = "EXTERNAL"
+  health_checks         = [google_compute_health_check.healthcheck_main.self_link]
+  connection_draining_timeout_sec = 10
+  backend {
+    group = google_compute_instance_group.instancegroup_main.self_link
+  }
+  iap {
+    enable               = true
+    oauth2_client_id     = google_iap_client.iap_client.client_id
+    oauth2_client_secret = google_iap_client.iap_client.secret
+  }
+}
+
+resource "google_compute_url_map" "urlmap_main" {
+  name            = local.urlmap_main_name
+  default_service = google_compute_backend_service.backend_main.self_link
+}
+
+resource "google_compute_managed_ssl_certificate" "ssl_main" {
+  name = local.ssl_main_name
+  managed {
+    domains = [var.dns_record]
+  }
+}
+
+resource "google_compute_target_https_proxy" "computetarget_main" {
+  name             = local.computetarget_main_name
+  url_map          = google_compute_url_map.urlmap_main.self_link
+  ssl_certificates = [google_compute_managed_ssl_certificate.ssl_main.self_link]
+}
+
+resource "google_compute_global_address" "ip_lb" {
+  name = local.ip_lb_name
+}
+
+resource "google_compute_global_forwarding_rule" "fr_main" {
+  name                  = local.fr_lb_name
+  ip_protocol           = "TCP"
+  load_balancing_scheme = "EXTERNAL"
+  port_range            = "443"
+  target                = google_compute_target_https_proxy.computetarget_main.self_link
+  ip_address            = google_compute_global_address.ip_lb.address
+}
+
+resource "google_iap_web_backend_service_iam_member" "iap_access" {
+  project              = var.gcloud_project_id
+  web_backend_service = google_compute_backend_service.backend_main.name
+  role                = "roles/iap.httpsResourceAccessor"
+  member              = "user:${var.admin_email}"
 }
 
 # Playbook
@@ -173,83 +263,9 @@ resource "null_resource" "null_ansible_install" {
   }
 }
 
-# Cloudflare
-# DNS A record (sin allow_overwrite en v5)
-resource "cloudflare_dns_record" "dnsrecord_main" {
-  zone_id = data.cloudflare_zone.cf_zone.id
-  name    = var.dns_record
-  type    = "A"
-  content = google_compute_instance.instance_main.network_interface[0].access_config[0].nat_ip
-  ttl     = 1
-  proxied = true
-}
+# Outpupts
 
-# Zone settings (uno por ajuste)
-resource "cloudflare_zone_setting" "zone_ssl" {
-  zone_id    = data.cloudflare_zone.cf_zone.id
-  setting_id = "ssl"          # "off" | "flexible" | "full" | "strict"
-  value      = "full"
-}
-
-resource "cloudflare_zone_setting" "zone_tls" {
-  zone_id    = data.cloudflare_zone.cf_zone.id
-  setting_id = "min_tls_version"
-  value      = "1.2"
-}
-
-resource "cloudflare_zone_setting" "zone_rewrites" {
-  zone_id    = data.cloudflare_zone.cf_zone.id
-  setting_id = "automatic_https_rewrites"
-  value      = "on"
-}
-
-resource "cloudflare_zone_setting" "zone_redirecthttps" {
-  zone_id    = data.cloudflare_zone.cf_zone.id
-  setting_id = "always_use_https"
-  value      = "on"
-}
-
-# Cache ruleset (atributo rules = [ { ... } ] en v5)
-resource "cloudflare_ruleset" "ruleset_cache" {
-  zone_id = data.cloudflare_zone.cf_zone.id
-  name    = "disable_cache_everything"
-  kind    = "zone"
-  phase   = "http_request_cache_settings"
-
-  rules = [{
-    enabled           = true
-    description       = "Soft disable cache (Terraform-safe)"
-    expression        = "true"
-    action            = "set_cache_settings"
-    action_parameters = {
-      cache = false
-    }
-  }]
-}
-
-# Expresión segura para países permitidos
-# WAF por países (solo si hay países definidos)
-resource "cloudflare_ruleset" "ruleset_waf" {
-  count   = length(var.allowed_countries) > 0 ? 1 : 0
-  zone_id = data.cloudflare_zone.cf_zone.id
-  name    = "country-access-control"
-  kind    = "zone"
-  phase   = "http_request_firewall_custom"
-
-  rules = [{
-    enabled      = true
-    description  = "Block all non-allowed countries"
-    expression   = format(
-      "not (ip.geoip.country in { %s })",
-      join(" ", [for c in var.allowed_countries : format("\"%s\"", c)])
-    )
-    action       = "block"
-  }]
-}
-
-# Zero Trust org
-resource "cloudflare_zero_trust_organization" "zerotrust_org" {
-  account_id  = var.cf_accountid
-  name        = local.zerotrust_name
-  auth_domain = var.zerotrust_record
+output "output_ip" {
+  description = "Global IPv4 assigned to the HTTPS load balancer"
+  value       = google_compute_global_address.lb_ip.address
 }

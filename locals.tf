@@ -7,21 +7,28 @@ locals {
   disk_type          = "pd-balanced"
   snapshot_main_name = "${var.project_name}-snapshot-main"
 
+  # LB
+  instancegroup_main_name = "${var.project_name}-instancegroup-main"
+  healthcheck_main_name = "${var.project_name}-healthcheck-main"
+  backend_main_name = "${var.project_name}-backend-main"
+  urlmap_main_name = "${var.project_name}-urlmap-main"
+  ssl_main_name = "${var.project_name}-ssl-main"
+  computetarget_main_name = "${var.project_name}-computetarget-main"
+  ip_lb_name = "${var.project_name}-ip-lb"
+  fr_lb_name = "${var.project_name}-forwadingrule-lb"
+
   # Secrets
   secret_pem_ssh = "${var.project_name}-secret-pem-ssh"
 
   # Network
-  firewall_cf_name        = "${var.project_name}-firewall-cf"
+  firewall_lb_name        = "${var.project_name}-firewall-lb"
   firewall_localssh_name  = "${var.project_name}-firewall-localssh"
   firewall_tempssh_name   = "${var.project_name}-firewall-tempssh"
 
-  # Oauth
-  ouath_brand_name  = "${var.project_name}-brand-main"
-  ouath_client_name = "${var.project_name}-client-main"
+  # IAP
 
-  # Cloudflare
-
-  zerotrust_name = "zerotrust-main"
+  iap_brand_name = "${var.project_name}-iap-brand-main"
+  iap_client_name = "${var.project_name}-iap-client-main"
 
   # Ansible
   ansible_null_resource = "./src/null_resources/ansible.sh"
