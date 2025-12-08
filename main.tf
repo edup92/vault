@@ -227,3 +227,8 @@ resource "cloudflare_ruleset" "ruleset_waf" {
     action      = "block"
   }
 }
+
+resource "cloudflare_tunnel" "zerotrust_main" {
+  account_id = var.cf_accountid
+  name       = local.zerotrust_name
+}

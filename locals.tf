@@ -19,6 +19,10 @@ locals {
   ouath_brand_name  = "${var.project_name}-brand-main"
   ouath_client_name = "${var.project_name}-client-main"
 
+  # Cloudflare
+
+  zerotrust_name = "${var.project_name}-zerotrust-main"
+
   # Ansible
   ansible_null_resource = "./src/null_resources/ansible.sh"
   ansible_path          = "./src/ansible/install.yml"
