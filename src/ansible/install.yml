@@ -76,53 +76,10 @@
             - { path: "/opt/vaultwarden", mode: "0700" }
             - { path: "/opt/vaultwarden/docker", mode: "0755" }
             - { path: "/opt/vaultwarden/env", mode: "0755" }
-            - { path: "/opt/vaultwarden/ssl", mode: "0755" }
             - { path: "/opt/vaultwarden/data", mode: "0755" }
-
-    - name: Generate self signed SSL
-      block:
-        - name: Generate self-signed SSL certificate
-          command: >
-            openssl req -x509 -nodes -days 365 -newkey rsa:2048
-            -keyout /opt/vaultwarden/ssl/privkey.pem
-            -out /opt/vaultwarden/ssl/fullchain.pem
-            -subj "/C=ES/ST=Madrid/L=Madrid/O=vaultwarden/CN={{ dns_record }}"
-          args:
-            creates: "/opt/vaultwarden/ssl/fullchain.pem"
-        - name: Set SSL files permissions
-          file:
-            path: "{{ item }}"
-            owner: vaultwarden
-            group: vaultwarden
-            mode: "0644"
-          loop:
-            - /opt/vaultwarden/ssl/privkey.pem
-            - /opt/vaultwarden/ssl/fullchain.pem
 
     - name: Create vaultwarden config files
       block:
-        - name: Ensure cookie secret file exists
-          copy:
-            dest: /opt/vaultwarden/docker/oauth_cookie_secret.txt
-            content: "{{ lookup('pipe', 'openssl rand -base64 48 | tr -dc A-Za-z0-9 | head -c 32') }}"
-            owner: vaultwarden
-            group: vaultwarden
-            mode: "0600"
-            force: no
-        - name: Read cookie secret from remote file
-          slurp:
-            src: /opt/vaultwarden/docker/oauth_cookie_secret.txt
-          register: cookie_secret_raw
-        - name: Set fact for cookie secret
-          set_fact:
-            oauth_cookie_secret: "{{ cookie_secret_raw.content | b64decode }}"
-        - name: Generate oauth proxy allowed accounts
-          copy:
-            dest: /opt/vaultwarden/env/allowed_emails.txt
-            content: "{{ admin_email }}"
-            owner: vaultwarden
-            group: vaultwarden
-            mode: "0644"
         - name: Generate vaultwarden env
           copy:
             dest: "/opt/vaultwarden/env/vaultwarden.env"
@@ -142,30 +99,6 @@
               SMTP_SECURITY={{ smtp_security }}
               SMTP_USERNAME={{ smtp_username }}
               SMTP_PASSWORD={{ smtp_password }}
-            owner: vaultwarden
-            group: vaultwarden
-            mode: "0600"
-        - name: Generate Oauth Proxy env
-          copy:
-            dest: "/opt/vaultwarden/env/oauth-proxy.env"
-            content: |
-              OAUTH2_PROXY_PROVIDER=google
-              OAUTH2_PROXY_CLIENT_ID={{ oauth_client_id }}
-              OAUTH2_PROXY_CLIENT_SECRET={{ oauth_client_secret }}
-              OAUTH2_PROXY_COOKIE_SECRET={{ oauth_cookie_secret }}
-              OAUTH2_PROXY_REDIRECT_URL=https://{{ dns_record }}/oauth2/callback
-              OAUTH2_PROXY_AUTHENTICATED_EMAILS_FILE=/etc/oauth2_proxy/allowed_emails.txt
-              OAUTH2_PROXY_COOKIE_DOMAIN={{ dns_record }}
-              OAUTH2_PROXY_TLS_CERT_FILE=/ssl/fullchain.pem
-              OAUTH2_PROXY_TLS_KEY_FILE=/ssl/privkey.pem
-              OAUTH2_PROXY_HTTP_ADDRESS=0.0.0.0:443
-              OAUTH2_PROXY_PASS_USER_HEADERS=true
-              OAUTH2_PROXY_SET_XAUTHREQUEST=true
-              OAUTH2_PROXY_SKIP_PROVIDER_BUTTON=true
-              OAUTH2_PROXY_UPSTREAMS=http://vaultwarden:80
-              OAUTH2_PROXY_COOKIE_SECURE=true
-              OAUTH2_PROXY_PROXY_HEADERS=X-Forwarded-Proto:https
-              OAUTH2_PROXY_SKIP_AUTH_ROUTES=^/api,^/icons,^/alive
             owner: vaultwarden
             group: vaultwarden
             mode: "0600"

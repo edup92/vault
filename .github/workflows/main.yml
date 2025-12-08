@@ -233,4 +233,5 @@ jobs:
       - name: Terraform init
         run: terraform init -input=false
       - name: Terraform apply
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -auto-approve tfplan -replace=google_compute_instance.instance_main 
+

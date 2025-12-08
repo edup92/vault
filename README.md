@@ -12,14 +12,10 @@
 {
   "gcloud_project_id":"",
   "gcloud_region":"",
-  "cf_token":"",
-  "cf_accountid": "",
   "project_name": "myproject",
-  "dns_domain": "mydomain.tld",
   "dns_record": "x.mydomain.tld",
   "admin_email": "",
   "admin_pass": "",
-  "allowed_countries": [],
   "smtp_host": "",
   "smtp_port": 587,
   "smtp_security": "starttls",
@@ -33,6 +29,6 @@
 6 - Go to https://console.cloud.google.com/security/iap?tab=applications&hl=es-419&project=MYPROJECT and enable IAP
 7 - Click in the same window on the created backend, click on add principal, on principal write authorized email (x@gmail.com) and add the role "roles/iap.httpsResourceAccessor"
 8 - Click in the same window on the created backend, click on configuration, set custom oauth, generate credentials and save
-7 - Add user to https://yourdomain.tld/admin/users/overview
+9 - Add user to https://yourdomain.tld/admin/users/overview
 
 Debug: Check docker instances with: sudo docker ps

@@ -181,10 +181,6 @@ resource "google_compute_backend_service" "backend_main" {
   backend {
     group = google_compute_instance_group.instancegroup_main.self_link
   }
- # iap {
- #   oauth2_client_id     = google_iap_client.iap_client.client_id
- #   oauth2_client_secret = google_iap_client.iap_client.secret
- # }
 }
 
 resource "google_compute_url_map" "urlmap_main" {
@@ -217,13 +213,6 @@ resource "google_compute_global_forwarding_rule" "fr_main" {
   target                = google_compute_target_https_proxy.computetarget_main.self_link
   ip_address            = google_compute_global_address.ip_lb.address
 }
-
-#resource "google_iap_web_backend_service_iam_member" "iap_access" {
-#  project              = var.gcloud_project_id
-#  web_backend_service = google_compute_backend_service.backend_main.name
-#  role                = "roles/iap.httpsResourceAccessor"
-#  member              = "user:${var.admin_email}"
-#}
 
 # Playbook
 

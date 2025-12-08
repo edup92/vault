@@ -21,26 +21,9 @@ variable "dns_record" {
   type        = string
 }
 
-variable "allowed_countries" {
-  description = "List of allowed countries for access control"
-  type        = list(string)
-  default     = []
-}
-
 variable "admin_email" {
   description = "Administrator email address for the Vaultwarden instance"
   type        = string
-}
-
-variable "oauth_client_id" {
-  description = "OAuth client ID for Google SSO authentication"
-  type        = string
-}
-
-variable "oauth_client_secret" {
-  description = "OAuth client secret for Google SSO authentication"
-  type        = string
-  sensitive   = true
 }
 
 variable "admin_pass" {
