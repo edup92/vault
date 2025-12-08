@@ -13,22 +13,31 @@ ROLES=(
 
 ### 1. Select project
 echo "[INFO] Using project: $PROJECT_ID"
-gcloud config set project "$PROJECT_ID"
+gcloud config set project "$PROJECT_ID" >/dev/null
 
 ### 2. Create Service Account
 echo "[INFO] Creating Service Account..."
 gcloud iam service-accounts create "$USERNAME" \
   --project="$PROJECT_ID" \
-  --display-name="CICD"
+  --display-name="CICD" \
+  >/dev/null
 echo "[INFO] Service Account created: $SA_EMAIL"
 
 ### 3. Assign role to the Service Account
 echo "[INFO] Assigning roles to $SA_EMAIL"
+sleep 5
 for ROLE in "${ROLES[@]}"; do
-  gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  echo "[INFO] Assigning role $ROLE to $SA_EMAIL"
+  if ! gcloud projects add-iam-policy-binding "$PROJECT_ID" \
     --member="serviceAccount:$SA_EMAIL" \
     --role="$ROLE" \
-    --quiet
+    --quiet \
+    >/dev/null
+  then
+    echo "[ERROR] Failed to assign role $ROLE to $SA_EMAIL" >&2
+    exit 1
+  fi
+  echo "[INFO] Successfully assigned role $ROLE to $SA_EMAIL"
 done
 echo "[INFO] Roles Assigned to $SA_EMAIL"
 
@@ -37,7 +46,7 @@ echo "[INFO] Generating JSON key (inline output):"
 echo ""
 echo "========================================"
 gcloud iam service-accounts keys create /dev/stdout \
-  --iam-account="$SA_EMAIL"
+  --iam-account="$SA_EMAIL" 2>/dev/null
 echo "========================================"
 echo ""
-echo "Copy the entire JSON above into a GitHub Secret named: GCP_SA_KEY"
+echo "Copy the entire JSON above"
