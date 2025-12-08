@@ -229,13 +229,9 @@ resource "cloudflare_ruleset" "ruleset_cache" {
 
 # Expresión segura para países permitidos
 locals {
-  allowed_countries_expr = length(var.allowed_countries) > 0 ?
-    format(
-      "not (ip.geoip.country in { %s })",
-      join(" ", [for c in var.allowed_countries : format("\"%s\"", c)])
-    ) :
-    "false"
+  allowed_countries_expr = length(var.allowed_countries) > 0 ? format("not (ip.geoip.country in { %s })", join(" ", [for c in var.allowed_countries : format("\"%s\"", c)])) : "false"
 }
+
 
 # WAF por países
 resource "cloudflare_ruleset" "ruleset_waf" {
