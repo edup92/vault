@@ -228,23 +228,22 @@ resource "cloudflare_ruleset" "ruleset_cache" {
 }
 
 # Expresión segura para países permitidos
-locals {
-  allowed_countries_expr = length(var.allowed_countries) > 0 ? format("not (ip.geoip.country in { %s })", join(" ", [for c in var.allowed_countries : format("\"%s\"", c)])) : "false"
-}
-
-
-# WAF por países
+# WAF por países (solo si hay países definidos)
 resource "cloudflare_ruleset" "ruleset_waf" {
+  count   = length(var.allowed_countries) > 0 ? 1 : 0
   zone_id = data.cloudflare_zone.cf_zone.id
   name    = "country-access-control"
   kind    = "zone"
   phase   = "http_request_firewall_custom"
 
   rules = [{
-    enabled     = true
-    description = "Block all non-allowed countries"
-    expression  = local.allowed_countries_expr
-    action      = "block"
+    enabled      = true
+    description  = "Block all non-allowed countries"
+    expression   = format(
+      "not (ip.geoip.country in { %s })",
+      join(" ", [for c in var.allowed_countries : format("\"%s\"", c)])
+    )
+    action       = "block"
   }]
 }
 
