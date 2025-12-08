@@ -128,7 +128,7 @@ resource "google_compute_firewall" "fw_cf" {
     protocol = "tcp"
     ports    = ["443"]
   }
-  source_ranges = data.cloudflare_ip_ranges.cloudflare.cidrs_ipv4
+  source_ranges = data.cloudflare_ip_ranges.cf_ip.ipv4_cidrs
   target_tags   = [google_compute_instance.instance_main.name]
 }
 
@@ -176,7 +176,7 @@ resource "null_resource" "null_ansible_install" {
 # Cloudflare
 
 resource "cloudflare_dns_record" "dnsrecord_main" {
-  zone_id = data.cloudflare_zone.zone_main.zone_id
+  zone_id = data.cloudflare_zone.cf_zone.id
   name    = var.dns_record
   type    = "A"
   content = google_compute_instance.instance_main.network_interface[0].access_config[0].nat_ip
@@ -186,31 +186,31 @@ resource "cloudflare_dns_record" "dnsrecord_main" {
 }
 
 resource "cloudflare_zone_setting" "zone_ssl" {
-  zone_id    = data.cloudflare_zone.zone_main.zone_id
+  zone_id    = data.cloudflare_zone.cf_zone.id
   setting_id = "ssl"
   value      = "full"
 }
 
 resource "cloudflare_zone_setting" "zone_tls" {
-  zone_id    = data.cloudflare_zone.zone_main.zone_id
+  zone_id    = data.cloudflare_zone.cf_zone.id
   setting_id = "min_tls_version"
   value      = "1.2"
 }
 
 resource "cloudflare_zone_setting" "zone_rewrites" {
-  zone_id    = data.cloudflare_zone.zone_main.zone_id
+  zone_id    = data.cloudflare_zone.cf_zone.id
   setting_id = "automatic_https_rewrites"
   value      = "on"
 }
 
 resource "cloudflare_zone_setting" "zone_redirecthttps" {
-  zone_id    = data.cloudflare_zone.zone_main.zone_id
+  zone_id    = data.cloudflare_zone.cf_zone.id
   setting_id = "always_use_https"
   value      = "on"
 }
 
 resource "cloudflare_ruleset" "ruleset_cache" {
-  zone_id = data.cloudflare_zone.zone_main.zone_id
+  zone_id = data.cloudflare_zone.cf_zone.id
   name    = "disable_cache_everything"
   kind    = "zone"
   phase   = "http_request_cache_settings"
@@ -226,7 +226,7 @@ resource "cloudflare_ruleset" "ruleset_cache" {
 }
 
 resource "cloudflare_ruleset" "ruleset_waf" {
-  zone_id = data.cloudflare_zone.zone_main.zone_id
+  zone_id = data.cloudflare_zone.cf_zone.id
   name    = "country-access-control"
   kind    = "zone"
   phase   = "http_request_firewall_custom"
