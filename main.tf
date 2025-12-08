@@ -186,24 +186,6 @@ resource "google_compute_backend_service" "backend_main" {
   }
 }
 
-resource "google_iap_web_backend_service_iam_member" "iap_exceptions" {
-  project            = var.gcloud_project_id
-  web_backend_service = google_compute_backend_service.backend_main.name
-  role   = "roles/iap.httpsResourceAccessor"
-  member = "allUsers"
-  condition {
-    title       = "vaultwarden_public_routes"
-    description = "Allow Vaultwarden mobile app routes"
-    expression  = <<-EOT
-      request.path.startsWith("/api/") ||
-      request.path.startsWith("/identity/") ||
-      request.path == "/app-id.json" ||
-      request.path == "/notifications/hub" ||
-      request.path.startsWith("/notifications/hub/")
-    EOT
-  }
-}
-
 resource "google_compute_url_map" "urlmap_main" {
   name            = local.urlmap_main_name
   default_service = google_compute_backend_service.backend_main.self_link
