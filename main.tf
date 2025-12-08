@@ -196,6 +196,9 @@ resource "google_compute_managed_ssl_certificate" "ssl_main" {
   managed {
     domains = [var.dns_record]
   }
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "google_compute_target_https_proxy" "computetarget_main" {
