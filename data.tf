@@ -2,7 +2,7 @@ data "google_compute_zones" "available" {
 }
 
 data "cloudflare_zone" "cf_zone" {
-  name = var.cf_zone_name
+  name = var.dns_domain
 }
 
 data "cloudflare_ip_ranges" "cf_ip" {}
