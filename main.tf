@@ -193,7 +193,7 @@ resource "google_compute_backend_service" "backend_main" {
     group = google_compute_instance_group.instancegroup_main.self_link
   }
   iap {
-    enable               = true
+    enabled               = true
     oauth2_client_id     = google_iap_client.iap_client.client_id
     oauth2_client_secret = google_iap_client.iap_client.secret
   }
@@ -267,5 +267,5 @@ resource "null_resource" "null_ansible_install" {
 
 output "output_ip" {
   description = "Global IPv4 assigned to the HTTPS load balancer"
-  value       = google_compute_global_address.lb_ip.address
+  value       = google_compute_global_address.ip_lb.address
 }

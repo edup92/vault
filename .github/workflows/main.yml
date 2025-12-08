@@ -32,7 +32,6 @@ jobs:
             (.cf_token            | type=="string") and
             (.cf_accountid        | type=="string") and
             (.project_name        | type=="string") and
-            (.dns_domain          | type=="string") and
             (.dns_record          | type=="string") and
             (.admin_email         | type=="string") and
             (.admin_pass          | type=="string") and
