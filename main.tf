@@ -76,7 +76,31 @@ resource "google_compute_instance" "instance_main" {
 
 # Snapshot
 
+resource "google_compute_resource_policy" "snapshot_policy" {
+  name   = local.snapshot_main_name
+  project = var.gcloud_project_id
+  snapshot_schedule_policy {
+    schedule {
+      daily_schedule {
+        days_in_cycle = 1
+        start_time    = "00:00"
+      }
+    }
+    retention_policy {
+      max_retention_days    = 31
+      on_source_disk_delete = "KEEP_AUTO_SNAPSHOTS"
+    }
+  }
+}
 
+resource "google_compute_disk_resource_policy_attachment" "disk_policy_attachment" {
+  name    = google_compute_resource_policy.snapshot_policy.name
+  disk    = google_compute_instance.instance_main.name
+  zone    = data.google_compute_zones.available.names[0]
+  project = var.gcloud_project_id
+
+  depends_on = [google_compute_instance.instance_main]
+}
 
 # Firewall
 
@@ -195,7 +219,29 @@ resource "google_compute_global_forwarding_rule" "fr_main" {
 
 # Playbook
 
-
+resource "null_resource" "null_ansible_install" {
+  depends_on = [
+    tls_private_key.pem_ssh,
+    google_compute_instance.instance_main,
+    google_compute_firewall.fw_tempssh,
+  ]
+  triggers = {
+    instance_id   = google_compute_instance.instance_main.id
+    playbook_hash = filesha256(local.ansible_path)
+  }
+  provisioner "local-exec" {
+    environment = {
+      PROJECT_ID    = var.gcloud_project_id
+      INSTANCE_IP    = google_compute_instance.instance_main.network_interface[0].access_config[0].nat_ip
+      INSTANCE_USER  = local.ansible_user
+      INSTANCE_SSH_KEY = nonsensitive(tls_private_key.pem_ssh.private_key_pem)
+      FW_TEMPSSH_NAME  = google_compute_firewall.fw_tempssh.name
+      VARS_JSON = nonsensitive(local.ansible_vars)
+      PLAYBOOK_PATH = local.ansible_path
+    }
+    command = local.ansible_null_resource
+  }
+}
 
 # Outpupts
 
