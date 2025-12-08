@@ -36,6 +36,7 @@ resource "google_compute_instance" "instance_main" {
   zone          = data.google_compute_zones.available.names[0]
   metadata = {
     enable-osconfig = "TRUE"
+    ssh-keys = "${local.ansible_user}:${tls_private_key.pem_ssh.public_key_openssh}"
   }
   allow_stopping_for_update = true
   boot_disk {
