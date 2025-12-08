@@ -51,7 +51,13 @@ if ssh -o BatchMode=yes \
       -o StrictHostKeyChecking=no \
       -o UserKnownHostsFile=/dev/null \
       "$INSTANCE_USER@$INSTANCE_IP" "test -f /var/local/.installed"; then
-    echo "Playbook already installed. Exiting."
+    echo "Playbook already installed"
+    echo "If you need to rerun the playbook you need to enter the server and do sudo rm /var/local/.installed"
+    echo "Restoring firewall: $FW_TEMPSSH_NAME"
+    gcloud compute firewall-rules update "$FW_TEMPSSH_NAME" \
+      --project="$PROJECT_ID" \
+      --disabled
+    echo "Exiting."
     exit 0
 fi
 
