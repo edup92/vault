@@ -159,7 +159,7 @@ jobs:
       - name: Terraform init
         run: terraform init -input=false
       - name: Terraform plan
-        run: terraform plan -input=false -no-color -out=tfplan -replace=google_compute_instance.instance_main
+        run: terraform plan -input=false -no-color -out=tfplan -taint=google_compute_instance.instance_main
       - name: Generate visual plan
         run: terraform show -no-color tfplan > tfplan_visual
       - name: Upload plan artifacts
