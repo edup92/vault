@@ -87,7 +87,7 @@ resource "google_compute_resource_policy" "snapshot_policy" {
       }
     }
     retention_policy {
-      max_retention_days    = 31
+      max_retention_days    = local.snapshot_retention
       on_source_disk_delete = "KEEP_AUTO_SNAPSHOTS"
     }
   }
@@ -98,7 +98,6 @@ resource "google_compute_disk_resource_policy_attachment" "disk_policy_attachmen
   disk    = google_compute_instance.instance_main.name
   zone    = data.google_compute_zones.available.names[0]
   project = var.gcloud_project_id
-
   depends_on = [google_compute_instance.instance_main]
 }
 
