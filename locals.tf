@@ -25,11 +25,6 @@ locals {
   firewall_localssh_name  = "${var.project_name}-firewall-localssh"
   firewall_tempssh_name   = "${var.project_name}-firewall-tempssh"
 
-  # IAP
-
-  iap_brand_name = "${var.project_name}-iap-brand-main"
-  iap_client_name = "${var.project_name}-iap-client-main"
-
   # Ansible
   ansible_null_resource = "./src/null_resources/ansible.sh"
   ansible_path          = "./src/ansible/install.yml"
