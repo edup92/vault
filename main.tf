@@ -76,31 +76,7 @@ resource "google_compute_instance" "instance_main" {
 
 # Snapshot
 
-resource "google_compute_resource_policy" "snapshot_policy" {
-  name   = local.snapshot_main_name
-  project = var.gcloud_project_id
-  snapshot_schedule_policy {
-    schedule {
-      daily_schedule {
-        days_in_cycle = 1
-        start_time    = "00:00"
-      }
-    }
-    retention_policy {
-      max_retention_days    = 31
-      on_source_disk_delete = "KEEP_AUTO_SNAPSHOTS"
-    }
-  }
-}
 
-resource "google_compute_disk_resource_policy_attachment" "disk_policy_attachment" {
-  name    = google_compute_resource_policy.snapshot_policy.name
-  disk    = google_compute_instance.instance_main.name
-  zone    = data.google_compute_zones.available.names[0]
-  project = var.gcloud_project_id
-
-  depends_on = [google_compute_instance.instance_main]
-}
 
 # Firewall
 
