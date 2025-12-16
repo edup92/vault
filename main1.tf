@@ -27,14 +27,28 @@ resource "google_sql_user" "sqluser_main" {
 # Cloudrun
 
 resource "google_cloud_run_v2_service" "service_main" {
-  name    = local.service_main_name
-  project = var.gcloud_project_id
+  name     = local.service_main_name
+  project  = var.gcloud_project_id
+  location = var.region
   ingress = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
   template {
+    volumes {
+      name = "cloudsql"
+      cloud_sql_instance {
+        instances = [
+          google_sql_database_instance.sql_main.connection_name
+        ]
+      }
+    }
     containers {
       image = local.service_image
       ports {
         container_port = local.service_port
+      }
+      # Mount Cloud SQL socket
+      volume_mounts {
+        name       = "cloudsql"
+        mount_path = "/cloudsql"
       }
       env {
         name  = "DOMAIN"
@@ -42,7 +56,7 @@ resource "google_cloud_run_v2_service" "service_main" {
       }
       env {
         name  = "ROCKET_PORT"
-        value = local.service_port
+        value = tostring(local.service_port)
       }
       env {
         name  = "ROCKET_ADDRESS"
@@ -98,11 +112,11 @@ resource "google_cloud_run_v2_service" "service_main" {
       }
       env {
         name  = "DATABASE_URL"
-        value = "postgresql://vaultwarden:${var.admin_pass}@/vaultwarden?host=/cloudsql/${google_sql_database_instance.sql_main.connection_name}"
+        value = "postgresql://vaultwarden:${var.db_password}@/vaultwarden?host=/cloudsql/${google_sql_database_instance.sql_main.connection_name}"
       }
       resources {
         limits = {
-          cpu    = local.service_cpu
+          cpu    = local.service_cpu    
           memory = local.service_memory
         }
       }
@@ -111,9 +125,6 @@ resource "google_cloud_run_v2_service" "service_main" {
       min_instance_count = 0
       max_instance_count = 1
     }
-    cloud_sql_instances = [
-      google_sql_database_instance.sql_main.connection_name
-    ]
   }
 }
 
