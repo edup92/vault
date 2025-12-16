@@ -21,5 +21,8 @@ resource "google_sql_database" "sqldb_main" {
 resource "google_sql_user" "sqluser_main" {
   name     = local.db_user
   instance = google_sql_database_instance.sql_main.name
-  password = var.db_password
+  password = var.admin_pass
 }
+
+# Cloudrun
+
