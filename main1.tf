@@ -29,7 +29,6 @@ resource "google_sql_user" "sqluser_main" {
 resource "google_cloud_run_v2_service" "service_main" {
   name     = local.service_main_name
   project  = var.gcloud_project_id
-  location = var.region
   ingress = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
   template {
     volumes {
