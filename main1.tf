@@ -111,7 +111,7 @@ resource "google_cloud_run_v2_service" "service_main" {
       }
       env {
         name  = "DATABASE_URL"
-        value = "postgresql://vaultwarden:${var.db_password}@/vaultwarden?host=/cloudsql/${google_sql_database_instance.sql_main.connection_name}"
+        value = "postgresql://vaultwarden:${var.admin_pass}@/vaultwarden?host=/cloudsql/${google_sql_database_instance.sql_main.connection_name}"
       }
       resources {
         limits = {
