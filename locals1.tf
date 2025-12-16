@@ -6,4 +6,11 @@ locals {
   db_name = "db_vault"
   db_user = "user_vault"
 
+  # Service
+
+  service_cpu =  "0.25"
+  service_memory = "256Mi"
+  service_image = "vaultwarden/server:latest"
+  service_port = 80
+
 }
