@@ -8,6 +8,7 @@ locals {
 
   # Service
 
+  service_main_name = "${var.project_name}-service-main"
   service_cpu =  "0.25"
   service_memory = "256Mi"
   service_image = "vaultwarden/server:latest"

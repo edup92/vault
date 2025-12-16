@@ -26,16 +26,14 @@ resource "google_sql_user" "sqluser_main" {
 
 # Cloudrun
 
-resource "google_cloud_run_v2_service" "service" {
-  name     = local.service_name
+resource "google_cloud_run_v2_service" "service_main" {
+  name     = local.service_main_name
   project  = var.gcloud_project_id
   ingress = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
   template {
     containers {
       image = local.service_image
-      ports {
-        container_port = local.service_port
-      }
+      ports { container_port = local.service_port }
       env { name = "DOMAIN" value = "https://${var.dns_record}" }
       env { name = "ROCKET_PORT" value = "${local.service_port}" }
       env { name = "ROCKET_ADDRESS" value = "0.0.0.0" }
@@ -66,5 +64,22 @@ resource "google_cloud_run_v2_service" "service" {
     cloud_sql_instances = [
       google_sql_database_instance.sql_main.connection_name
     ]
+  }
+}
+
+# LB
+
+resource "google_compute_backend_service" "backend_main" {
+  name                  = local.backend_name
+  protocol              = "HTTP"
+  port_name             = "http"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  health_checks         = [google_compute_health_check.healthcheck_main.self_link]
+  connection_draining_timeout_sec = 10
+  backend {
+    group = google_compute_region_network_endpoint_group.neg.id
+  }
+  lifecycle {
+    ignore_changes = [iap]         # <- clave para no deshabilitarlo
   }
 }
