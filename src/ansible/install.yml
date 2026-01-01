@@ -165,4 +165,4 @@
             name: vaultwarden-server
             enabled: true
             state: restarted
-            daemon_reload: true 
+            daemon_reload: true
