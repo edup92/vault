@@ -159,10 +159,3 @@ resource "null_resource" "null_ansible_install" {
     command = local.ansible_null_resource
   }
 }
-
-# Outpupts
-
-output "output_ip" {
-  description = "Global IPv4 assigned to the HTTPS load balancer"
-  value       = google_compute_global_address.ip_lb.address
-}
