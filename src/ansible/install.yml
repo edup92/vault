@@ -78,7 +78,7 @@
             - { path: "/opt/vaultwarden/data", mode: "0755" }
             - { path: "/opt/vaultwarden/data/tailscale", mode: "0755" }
 
-    - name: Create vaultwarden config files
+    - name: Create docker envs
       block:
         - name: Generate vaultwarden env
           copy:
@@ -102,6 +102,28 @@
             owner: vaultwarden
             group: vaultwarden
             mode: "0600"
+        - name: Generate tailscale env
+          copy:
+            dest: "/opt/vaultwarden/env/tailscale.json"
+            content: |
+              {
+                "TCP": {
+                  "443": { "HTTPS": true }
+                },
+                "Web": {
+                  "${TS_CERT_DOMAIN}:443": {
+                    "Handlers": {
+                      "/": { "Proxy": "http://127.0.0.1:80" }
+                    }
+                  }
+                },
+                "AllowFunnel": {
+                  "${TS_CERT_DOMAIN}:443": false
+                }
+              }
+            owner: vaultwarden
+            group: vaultwarden
+            mode: "0600"
  
     - name: Docker configurations
       block:
@@ -122,10 +144,13 @@
                     - /dev/net/tun:/dev/net/tun
                   volumes:
                     - /opt/vaultwarden/data/tailscale:/var/lib/tailscale
+                    - /opt/vaultwarden/env/tailscale.json:/config/serve.json:ro
                   environment:
                     TS_AUTHKEY: "{{ tailscale_key }}"
                     TS_STATE_DIR: /var/lib/tailscale
                     TS_HOSTNAME: vault
+                    TS_AUTH_ONCE: "true"
+                    TS_SERVE_CONFIG: /config/serve.json
 
                 vaultwarden:
                   image: vaultwarden/server:latest
