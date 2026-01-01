@@ -32,6 +32,7 @@ locals {
   ansible_user          = "ubuntu"
 
   ansible_vars = jsonencode({
+    tailscale_key       = var.tailscale_key
     dns_record          = var.dns_record
     admin_email         = var.admin_email
     admin_pass          = var.admin_pass

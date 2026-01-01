@@ -16,6 +16,11 @@ variable "gcloud_region" {
   type        = string
 }
 
+variable "tailscale_key" {
+  description = "Tailscale Key"
+  type        = string
+}
+
 variable "dns_record" {
   description = "DNS record"
   type        = string

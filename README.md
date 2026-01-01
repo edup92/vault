@@ -1,6 +1,6 @@
 # Vault
 
-## Vaultwarden selfhosted in docker containers, with Google SSO Auth, Hosted in Google cloud
+## Vaultwarden selfhosted in docker containers, with Tailscale, Hosted in Google cloud
 
 ## Installation
 
@@ -13,6 +13,7 @@
   "gcloud_project_id":"",
   "gcloud_region":"",
   "project_name": "myproject",
+  "tailscale_key": "",
   "dns_record": "x.mydomain.tld",
   "admin_email": "",
   "admin_pass": "",
@@ -26,10 +27,5 @@
 }`
 
 - Run Github Actions
-- Go to https://console.cloud.google.com/security/iap?tab=applications&hl=es-419&project=MYPROJECT and enable IAP
-- Click in the same window on the created backend, click on add principal, on principal write authorized email (x@gmail.com) and add the role "roles/iap.httpsResourceAccessor"
-- Click in the same window on the created backend, click on configuration, set custom oauth, generate credentials and save
-- Disable and enable IAP, check if works
-- Add user to https://yourdomain.tld/admin/users/overview
 
 - Debug: Check docker instances with: sudo docker ps

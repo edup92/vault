@@ -76,6 +76,7 @@
             - { path: "/opt/vaultwarden/docker", mode: "0755" }
             - { path: "/opt/vaultwarden/env", mode: "0755" }
             - { path: "/opt/vaultwarden/data", mode: "0755" }
+            - { path: "/opt/vaultwarden/data/tailscale", mode: "0755" }
 
     - name: Create vaultwarden config files
       block:
@@ -109,6 +110,23 @@
             dest: "/opt/vaultwarden/docker/docker-compose.yml"
             content: |-
               services:
+                tailscale:
+                  image: tailscale/tailscale:stable
+                  container_name: tailscale
+                  hostname: vault
+                  restart: always
+                  cap_add:
+                    - NET_ADMIN
+                    - NET_RAW
+                  devices:
+                    - /dev/net/tun:/dev/net/tun
+                  volumes:
+                    - /opt/vaultwarden/data/tailscale:/var/lib/tailscale
+                  environment:
+                    TS_AUTHKEY: "{{ tailscale_key }}"
+                    TS_STATE_DIR: /var/lib/tailscale
+                    TS_HOSTNAME: vault
+
                 vaultwarden:
                   image: vaultwarden/server:latest
                   container_name: vaultwarden
@@ -117,8 +135,9 @@
                     - ../data:/data
                   env_file:
                     - ../env/vaultwarden.env
-                  ports:
-                    - "80:80"
+                  network_mode: "service:tailscale"
+                  depends_on:
+                    - tailscale
             owner: vaultwarden
             group: vaultwarden
             mode: "0644"

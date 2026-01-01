@@ -118,20 +118,6 @@ resource "google_compute_firewall" "fw_localssh" {
   target_tags   = [google_compute_instance.instance_main.name]
 }
 
-resource "google_compute_firewall" "fw_lb" {
-  name    = local.firewall_lb_name
-  project = var.gcloud_project_id
-  network = "default"
-  direction = "INGRESS"
-  priority  = 1000
-  allow {
-    protocol = "tcp"
-    ports    = ["80"]
-  }
-  source_ranges = ["35.191.0.0/16","130.211.0.0/22"]
-  target_tags   = [google_compute_instance.instance_main.name]
-}
-
 resource "google_compute_firewall" "fw_tempssh" {
   name    = local.firewall_tempssh_name
   project = var.gcloud_project_id
@@ -145,76 +131,6 @@ resource "google_compute_firewall" "fw_tempssh" {
   source_ranges = ["0.0.0.0/0"]
   target_tags   = [google_compute_instance.instance_main.name]
   disabled = true
-}
-
-# LB
-
-resource "google_compute_instance_group" "instancegroup_main" {
-  name        = local.instancegroup_main_name
-  zone    = data.google_compute_zones.available.names[0]
-  instances = [google_compute_instance.instance_main.self_link]
-  named_port {
-    name = "http"
-    port = 80
-  }
-}
-
-resource "google_compute_health_check" "healthcheck_main" {
-  name                = local.healthcheck_main_name
-  check_interval_sec  = 5
-  timeout_sec         = 5
-  healthy_threshold   = 2
-  unhealthy_threshold = 2
-  http_health_check {
-    port         = 80
-    request_path = "/"
-  }
-}
-
-resource "google_compute_backend_service" "backend_main" {
-  name                  = local.backend_main_name
-  protocol              = "HTTP"
-  port_name             = "http"
-  load_balancing_scheme = "EXTERNAL"
-  health_checks         = [google_compute_health_check.healthcheck_main.self_link]
-  connection_draining_timeout_sec = 10
-  backend {
-    group = google_compute_instance_group.instancegroup_main.self_link
-  }
-  lifecycle {
-    ignore_changes = [iap]         # <- clave para no deshabilitarlo
-  }
-}
-
-resource "google_compute_url_map" "urlmap_main" {
-  name            = local.urlmap_main_name
-  default_service = google_compute_backend_service.backend_main.self_link
-}
-
-resource "google_compute_managed_ssl_certificate" "ssl_main" {
-  name = local.ssl_main_name
-  managed {
-    domains = [var.dns_record]
-  }
-}
-
-resource "google_compute_target_https_proxy" "computetarget_main" {
-  name             = local.computetarget_main_name
-  url_map          = google_compute_url_map.urlmap_main.self_link
-  ssl_certificates = [google_compute_managed_ssl_certificate.ssl_main.self_link]
-}
-
-resource "google_compute_global_address" "ip_lb" {
-  name = local.ip_lb_name
-}
-
-resource "google_compute_global_forwarding_rule" "fr_main" {
-  name                  = local.fr_lb_name
-  ip_protocol           = "TCP"
-  load_balancing_scheme = "EXTERNAL"
-  port_range            = "443"
-  target                = google_compute_target_https_proxy.computetarget_main.self_link
-  ip_address            = google_compute_global_address.ip_lb.address
 }
 
 # Playbook
