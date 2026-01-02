@@ -14,7 +14,7 @@
   "gcloud_region":"",
   "project_name": "myproject",
   "tailscale_key": "",
-  "dns_record": "x.mydomain.tld",
+  "dns_record": "x.x.ts.net",
   "admin_email": "",
   "admin_pass": "",
   "smtp_host": "",
